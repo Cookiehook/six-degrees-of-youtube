@@ -1,3 +1,5 @@
+import json
+
 import requests
 
 
@@ -17,16 +19,37 @@ class YoutubeApi:
             })
         return filtered_videos
 
-    def get_upload_playlist_for_channel(self, name):
+    def get_uploads_for_channel(self, name):
+        url = self.base_url + 'search'
+        params = {
+            'key': self.api_key,
+            'part': 'snippet',
+            'q': name,
+            'type': 'channel',
+            'maxResults': 50
+        }
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        for result in response.json()['items']:
+            channel_id = result['id']['channelId']
+            channel = self.get_channel_by_id(channel_id)
+            print(f"Channel Name: {channel['snippet']['title']} - {result['id']['channelId']}")
+            if channel['snippet']['title'].upper() == name.upper():
+                return channel['contentDetails']['relatedPlaylists']['uploads']
+        raise RuntimeError(f"Could not find channel named '{name}'")
+
+    def get_channel_by_id(self, channel_id):
         url = self.base_url + 'channels'
         params = {
             'key': self.api_key,
-            'part': 'contentDetails',
-            'forUsername': name
+            'part': 'contentDetails,snippet',
+            'id': channel_id
         }
+
         response = requests.get(url, params=params)
         response.raise_for_status()
-        return response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        return response.json()['items'][0]
 
     def get_videos_for_playlist(self, playlist_id):
         url = self.base_url + 'playlistItems'
@@ -52,8 +75,18 @@ class YoutubeApi:
     def get_related_channels(self, video_details):
         related_channels = {}
         related_videos = {}
+        illegal_characters = ['(', ')', ',']
 
         for video in video_details:
-            if "@" in video['title']:
-                print(video['title'])
-                print(video['title'].split("@"))
+            title = video['title']
+            for char in illegal_characters:
+                title = title.replace(char, '')
+            if "@" in title and title[0] != "@":
+                channel_tags = [s.strip() for s in title.split('@')[1:]]
+            elif "@" in video['title']:
+                channel_tags = [s.strip() for s in title.split('@')]
+            else:
+                continue
+            related_channels[video['video_id']] = channel_tags
+
+        print(json.dumps(related_channels, indent=2))
