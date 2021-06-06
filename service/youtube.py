@@ -1,4 +1,5 @@
 import json
+import re
 
 import requests
 
@@ -8,6 +9,7 @@ class YoutubeApi:
     def __init__(self, api_key):
         self.base_url = 'https://www.googleapis.com/youtube/v3/'
         self.api_key = api_key
+        self.parsed_channels = []
 
     def filter_video_details(self, raw_videos):
         filtered_videos = []
@@ -36,6 +38,7 @@ class YoutubeApi:
             channel = self.get_channel_by_id(channel_id)
             print(f"Channel Name: {channel['snippet']['title']} - {result['id']['channelId']}")
             if channel['snippet']['title'].upper() == name.upper():
+                self.parsed_channels.append(channel_id)
                 return channel['contentDetails']['relatedPlaylists']['uploads']
         raise RuntimeError(f"Could not find channel named '{name}'")
 
@@ -74,19 +77,27 @@ class YoutubeApi:
 
     def get_related_channels(self, video_details):
         related_channels = {}
-        related_videos = {}
         illegal_characters = ['(', ')', ',']
 
         for video in video_details:
             title = video['title']
+            channel_tags = None
+
+            # Parse video titles for tagged channels
             for char in illegal_characters:
                 title = title.replace(char, '')
             if "@" in title and title[0] != "@":
                 channel_tags = [s.strip() for s in title.split('@')[1:]]
             elif "@" in video['title']:
                 channel_tags = [s.strip() for s in title.split('@')]
-            else:
-                continue
+
+            # Parse video description for channel/video mentions
+            channel_ids = re.findall('www.youtube.com/(?:channel|c)/([a-zA-Z0-9_\-]+)', video['description'])
+            user_ids = re.findall('www.youtube.com/(?:user)/([a-zA-Z0-9_\-]+)', video['description'])
+
+            if user_ids:
+                print()
+
             related_channels[video['video_id']] = channel_tags
 
         print(json.dumps(related_channels, indent=2))
