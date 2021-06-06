@@ -94,7 +94,7 @@ class YoutubeApi:
             # Parse video description for channel/video mentions
             channel_ids = re.findall('www.youtube.com/(?:channel|c)/([a-zA-Z0-9_\-]+)', video['description'])
             user_ids = re.findall('www.youtube.com/(?:user)/([a-zA-Z0-9_\-]+)', video['description'])
-
+            # TODO - Parse descriptions for linked videos
             if user_ids:
                 print()
 
