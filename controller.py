@@ -10,6 +10,5 @@ if __name__ == '__main__':
     if not target_search:
         raise FileNotFoundError(f"Couldn't find target channel: '{target_name}'")
 
-    target_channel = Channel.get_channel(ChannelTypes.ID, target_search.id)
-    channel_pool.add(target_channel)
+    channel_pool.add(ChannelTypes.ID, target_search.id)
     print()

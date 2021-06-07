@@ -55,11 +55,16 @@ class ChannelPool:
         self.channels = []
 
     def __repr__(self):
-        return ", ".join([c.title for c in self.channels])
+        return f"({len(self.channels)}) " + ", ".join([c.title for c in self.channels])
 
-    def add(self, new_channel):
+    def add(self, identifier_attribute: ChannelTypes, identifier_value):
         for channel in self.channels:
-            if channel == new_channel:
-                channel.update(new_channel)
-                return
+            if identifier_attribute == ChannelTypes.ID:
+                if channel.id == identifier_value:
+                    return channel
+            if identifier_attribute == ChannelTypes.USERNAME:
+                if channel.user == identifier_value:
+                    return channel
+        new_channel = Channel.get_channel(identifier_attribute, identifier_value)
         self.channels.append(new_channel)
+        return new_channel
