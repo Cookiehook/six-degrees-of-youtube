@@ -8,13 +8,28 @@ from models.youtube_object import YoutubeObject
 class Video(YoutubeObject):
 
     def __init__(self, api_response):
-        self.id = api_response['snippet']['resourceId']['videoId']
+        if api_response['kind'] == 'youtube#playlistItem':
+            self.id = api_response['snippet']['resourceId']['videoId']
+        else:
+            self.id = api_response['id']
         self.channel_id = api_response['snippet']['channelId']
         self.title = api_response['snippet']['title']
         self.description = api_response['snippet']['description']
 
     def __repr__(self):
         return self.title + " - " + self.channel_id
+
+    @classmethod
+    def get_video(cls, video_id):
+        params = {
+            'key': cls.api_key,
+            'part': 'snippet',
+            'id': video_id,
+            'maxResults': 1
+        }
+
+        response = cls.get('videos', params=params)
+        return cls(response.json()['items'][0])
 
     def get_collaborators_from_title(self):
         illegal_characters = ['(', ')', ',']
@@ -33,15 +48,8 @@ class Video(YoutubeObject):
 
         for video_id in video_ids:
             try:
-                params = {
-                    'key': self.api_key,
-                    'part': 'snippet',
-                    'id': video_id,
-                    'maxResults': 1
-                }
-
-                response = self.get('videos', params=params)
-                channel_ids.append(response.json()['items'][0]['snippet']['channelId'])
+                video = VideoPool.instance().get_video(video_id)
+                channel_ids.append(video.channel_id)
             except HTTPError as e:
                 print(f"ERROR - {e}")
 
@@ -52,3 +60,27 @@ class Video(YoutubeObject):
 
     def get_collaborator_users_from_description(self):
         return re.findall('youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)
+
+
+class VideoPool:
+
+    _instance = None
+    videos = {}
+
+    def __init__(self):
+        raise RuntimeError('Call instance() instead')
+
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls.__new__(cls)
+        return cls._instance
+
+    def get_video(self, video_id):
+        if video_id not in self.videos:
+            self.videos[video_id] = Video.get_video(video_id)
+        return self.videos[video_id]
+
+    def __repr__(self):
+        return f"({len(self.videos.keys())}) "

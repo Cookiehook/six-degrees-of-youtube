@@ -1,12 +1,13 @@
 from enum import Enum
 
-from models.video import Video
+from models.video import Video, VideoPool
 from models.youtube_object import YoutubeObject
 
 
 class ChannelTypes(Enum):
     ID = 'id'
     USERNAME = 'forUsername'
+    URL = 'url'
 
 
 class Channel(YoutubeObject):
@@ -16,17 +17,18 @@ class Channel(YoutubeObject):
         self.title = api_response['snippet']['title']
         self.url = api_response['snippet'].get('customUrl')
         self.user = user
-        self.videos = self.get_uploads(api_response['contentDetails']['relatedPlaylists']['uploads'])
+        self.uploads_id = api_response['contentDetails']['relatedPlaylists']['uploads']
+        self.processed = False
 
     def __repr__(self):
         return f"{self.title} - {self.id}"
 
-    def get_uploads(self, playlist_id):
+    def get_uploads(self):
         print(f"Getting uploads for channel '{self.title}'")
         params = {
             'key': self.api_key,
             'part': 'snippet',
-            'playlistId': playlist_id,
+            'playlistId': self.uploads_id,
             'maxResults': 50
         }
 
@@ -38,7 +40,9 @@ class Channel(YoutubeObject):
             response = self.get('playlistItems', params=params)
             all_videos.extend(response.json()['items'])
 
-        return [Video(item) for item in all_videos]
+        all_videos = [Video(item) for item in all_videos]
+        VideoPool.instance().videos.update({v.id: v for v in all_videos})
+        return all_videos
 
     @classmethod
     def get_channel(cls, identifier_attribute: ChannelTypes, identifier_value):
@@ -57,8 +61,17 @@ class Channel(YoutubeObject):
 
 class ChannelPool:
 
+    _instance = None
+    channels = []
+
     def __init__(self):
-        self.channels = []
+        raise RuntimeError('Call instance() instead')
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls.__new__(cls)
+        return cls._instance
 
     def __repr__(self):
         return f"({len(self.channels)}) " + ", ".join([c.title for c in self.channels])
@@ -69,7 +82,10 @@ class ChannelPool:
                 if channel.id == identifier_value:
                     return channel
             if identifier_attribute == ChannelTypes.USERNAME:
-                if channel.user == identifier_value:
+                if channel.user and channel.user.upper() == identifier_value.upper():
+                    return channel
+            if identifier_attribute == ChannelTypes.URL:
+                if channel.url and channel.url.upper() == identifier_value.upper():
                     return channel
 
     def add_channel(self, identifier_attribute: ChannelTypes, identifier_value):
@@ -78,5 +94,11 @@ class ChannelPool:
             return existing_channel
 
         new_channel = Channel.get_channel(identifier_attribute, identifier_value)
+        if identifier_attribute == ChannelTypes.USERNAME:
+            for existing_channel in self.channels:
+                if existing_channel.id == new_channel.id:
+                    existing_channel.user = new_channel.user
+                    return existing_channel
+
         self.channels.append(new_channel)
         return new_channel

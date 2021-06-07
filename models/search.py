@@ -16,6 +16,10 @@ class Search(YoutubeObject):
             self.kind = SearchTypes.CHANNEL
             self.id = api_response['id']['channelId']
             self.title = api_response['snippet']['title']
+        elif api_response['id']['kind'] == "youtube#video":
+            self.kind = SearchTypes.VIDEO
+            self.id = api_response['id']['videoId']
+            self.title = api_response['snippet']['title']
         else:
             raise NotImplemented(f"Search not implemented for {api_response['id']['kind']}")
 
@@ -23,11 +27,11 @@ class Search(YoutubeObject):
         return self.title + " - " + self.kind.value + " - " + self.id
 
     @classmethod
-    def search(cls, search_term, object_type: SearchTypes, max_results=5):
+    def search(cls, search_term, object_types, max_results=5):
         """
 
         :param search_term: Term to search by
-        :param object_type: Valid SearchType Enum
+        :param object_types: List of valid SearchType Enums
         :param max_results: Max number of results to return
         :return: Search object
         """
@@ -35,12 +39,33 @@ class Search(YoutubeObject):
             'key': cls.api_key,
             'part': 'snippet',
             'q': search_term,
-            'maxResults': max_results
+            'maxResults': max_results,
+            'type': ",".join([t.value for t in object_types])
         }
-
-        if object_type:
-            params['type'] = object_type.value
 
         response = cls.get('search', params=params)
         items = response.json().get('items')
         return [cls(item) for item in items]
+
+
+class SearchPool:
+
+    _instance = None
+    searches = {}
+
+    def __init__(self):
+        raise RuntimeError('Call instance() instead')
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls.__new__(cls)
+        return cls._instance
+
+    def search(self, search_term, object_types: list = None, max_results=5):
+        if not object_types:
+            object_types = [SearchTypes.CHANNEL, SearchTypes.VIDEO]
+        search_id = f"{search_term} - {','.join([t.value for t in object_types])}"
+        if search_id not in self.searches:
+            self.searches[search_id] = Search.search(search_term, object_types, max_results)
+        return self.searches[search_id]
