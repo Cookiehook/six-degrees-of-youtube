@@ -21,7 +21,7 @@ class YoutubeApi:
             })
         return filtered_videos
 
-    def search_for_channel(self, search_term, match_term='title', filter_type='channel'):
+    def search(self, search_term, filter_type):
         url = self.base_url + 'search'
         params = {
             'key': self.api_key,
@@ -33,21 +33,32 @@ class YoutubeApi:
 
         response = requests.get(url, params=params)
         response.raise_for_status()
-        for result in response.json()['items']:
+        # TODO - Check that items is not None
+        return response.json()['items']
+
+    def find_channel_by_title(self, channel_name):
+        search_results = self.search(channel_name, 'channel')
+        for result in search_results:
+            print(f"Channel Name: {result['snippet']['title']} - {result['id']['channelId']}")
+            if result['snippet']['title'].upper() == channel_name.upper():
+                return self.get_channel_for_id_name(result['id']['channelId'])
+
+        raise RuntimeError(f"Could not find channel named '{channel_name}'")
+
+    def find_channel_by_url(self, channel_url):
+        search_results = self.search(channel_url, None)
+        for result in search_results:
             if result['id']['kind'] == 'youtube#channel':
-                channel_id = result['id']['channelId']
-                channel = self.get_channel(channel_id)
-                print(f"Channel Name: {channel['snippet'][match_term]} - {result['id']['channelId']}")
-                if channel['snippet'][match_term].upper() == search_term.upper():
+                channel = self.get_channel_for_id_name(result['id']['channelId'])
+                if channel['snippet'].get('customURL', 'no url').upper() == channel_url.upper():
                     return channel
+
             if result['id']['kind'] == 'youtube#video':
-                channel = self.get_channel(channel_id=result['snippet']['channelId'])
-                if channel['snippet'].get('customUrl') == search_term:
+                channel = self.get_channel_for_id_name(result['snippet']['channelId'])
+                if channel['snippet'].get('customUrl', 'no url').upper() == channel_url.upper():
                     return channel
 
-        raise RuntimeError(f"Could not find channel named '{search_term}'")
-
-    def get_channel(self, channel_id=None, username=None):
+    def get_channel_for_id_name(self, channel_id=None, username=None):
         url = self.base_url + 'channels'
         params = {
             'key': self.api_key,
@@ -61,7 +72,21 @@ class YoutubeApi:
 
         response = requests.get(url, params=params)
         response.raise_for_status()
+        # TODO - Check one and only one channel is found
         return response.json()['items'][0]
+
+    def get_channel_for_video(self, video_id):
+        url = self.base_url + 'videos'
+        params = {
+            'key': self.api_key,
+            'part': 'snippet',
+            'id': video_id,
+            'maxResults': 1
+        }
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return self.get_channel_for_id_name(response.json()['items'][0]['snippet']['channelId'])
 
     def get_videos_for_playlist(self, playlist_id):
         url = self.base_url + 'playlistItems'
@@ -69,7 +94,7 @@ class YoutubeApi:
             'key': self.api_key,
             'part': 'snippet',
             'playlistId': playlist_id,
-            'maxResults': 5
+            'maxResults': 50
         }
 
         response = requests.get(url, params=params)
@@ -84,18 +109,6 @@ class YoutubeApi:
 
         return self.filter_video_details(all_videos)
 
-    def get_video_owner(self, video_id):
-        url = self.base_url + 'videos'
-        params = {
-            'key': self.api_key,
-            'part': 'snippet,contentDetails',
-            'id': video_id,
-        }
-
-        response = requests.get(url, params=params)
-        # response.raise_for_status()
-        print()
-
     def get_related_channels(self, video_details):
         links = {}
         illegal_characters = ['(', ')', ',']
@@ -105,7 +118,7 @@ class YoutubeApi:
             title = video['title']
             channel_tags = []
 
-            # Parse video titles for tagged channels
+            # Parse video titles for channel titles (eg @Halocene)
             for char in illegal_characters:
                 title = title.replace(char, '')
             if "@" in title and title[0] != "@":
@@ -114,24 +127,23 @@ class YoutubeApi:
                 channel_tags = [s.strip() for s in title.split('@')]
 
             # Parse video description for channel/video mentions
-            channel_ids = re.findall('www.youtube.com/channel/([a-zA-Z0-9_\-]+)', video['description'])
-            channel_urls = re.findall('www.youtube.com/c/([a-zA-Z0-9_\-]+)', video['description'])
-            user_ids = re.findall('www.youtube.com/user/([a-zA-Z0-9_\-]+)', video['description'])
-            video_ids = re.findall('www.youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', video['description'])
+            channel_ids = re.findall('youtube.com/channel/([a-zA-Z0-9_\-]+)', video['description'])
+            channel_urls = re.findall('youtube.com/c/([a-zA-Z0-9_\-]+)', video['description'])
+            user_ids = re.findall('youtube.com/user/([a-zA-Z0-9_\-]+)', video['description'])
+            video_ids = re.findall('youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', video['description'])
 
             linked_channels.extend(channel_ids)
 
             # Get channel ids from channel name
             for channel_url in channel_urls:
-                linked_channels.append(self.search_for_channel(channel_url, match_term='customURL', filter_type=None)['id'])
-
+                linked_channels.append(self.find_channel_by_url(channel_url)['id'])
             # Get channel ids from linked users
             for user_id in user_ids:
-                linked_channels.append(self.get_channel(username=user_id)['id'])
+                linked_channels.append(self.get_channel_for_id_name(username=user_id)['id'])
 
             # Get channel ids from linked videos
             for video_id in video_ids:
-                linked_channels.append(self.get_video_owner(video_id))
+                linked_channels.append(self.get_channel_for_video(video_id)['id'])
 
             # Get channel ids from channel tags
             for tag in channel_tags:
@@ -139,7 +151,7 @@ class YoutubeApi:
                 tag_words = tag.split()
                 for idx, word in enumerate(tag_words):
                     try:
-                        channel_id = self.search_for_channel(' '.join(tag_words[:idx+1]))['id']
+                        channel_id = self.find_channel_by_title(' '.join(tag_words[:idx+1]))['id']
                         print()
                     except RuntimeError:
                         pass
@@ -150,5 +162,6 @@ class YoutubeApi:
 
             if linked_channels:
                 links[video['title']] = linked_channels
+
             print()
         print()
