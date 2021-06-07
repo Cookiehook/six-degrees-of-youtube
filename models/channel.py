@@ -1,5 +1,6 @@
 from enum import Enum
 
+from models.video import Video
 from models.youtube_object import YoutubeObject
 
 
@@ -15,22 +16,29 @@ class Channel(YoutubeObject):
         self.title = api_response['snippet']['title']
         self.url = api_response['snippet'].get('customUrl')
         self.user = user
-        self.uploads_playlist_id = api_response['contentDetails']['relatedPlaylists']['uploads']
+        self.videos = self.get_uploads(api_response['contentDetails']['relatedPlaylists']['uploads'])
 
     def __repr__(self):
         return f"{self.title} - {self.id}"
 
-    def __eq__(self, other):
-        if (self.id == other.id) or (self.title == other.title) or (self.url == other.url) or (self.user == other.user):
-            return True
-        else:
-            return False
+    def get_uploads(self, playlist_id):
+        print(f"Getting uploads for channel '{self.title}'")
+        params = {
+            'key': self.api_key,
+            'part': 'snippet',
+            'playlistId': playlist_id,
+            'maxResults': 50
+        }
 
-    def update(self, other):
-        if other.url is not None:
-            self.url = other.url
-        if other.user is not None:
-            self.user = other.user
+        response = self.get('playlistItems', params=params)
+        all_videos = response.json()['items']
+
+        while 'nextPageToken' in response.json():
+            params['pageToken'] = response.json()['nextPageToken']
+            response = self.get('playlistItems', params=params)
+            all_videos.extend(response.json()['items'])
+
+        return [Video(item) for item in all_videos]
 
     @classmethod
     def get_channel(cls, identifier_attribute: ChannelTypes, identifier_value):
@@ -40,9 +48,7 @@ class Channel(YoutubeObject):
             identifier_attribute.value: identifier_value
         }
         response = cls.get('channels', params=params)
-        response.raise_for_status()
         items = response.json()['items']
-        assert len(items) == 1
         if identifier_attribute == ChannelTypes.USERNAME:
             return cls(items[0], identifier_value)
         else:
@@ -57,7 +63,7 @@ class ChannelPool:
     def __repr__(self):
         return f"({len(self.channels)}) " + ", ".join([c.title for c in self.channels])
 
-    def add(self, identifier_attribute: ChannelTypes, identifier_value):
+    def get_channel(self, identifier_attribute: ChannelTypes, identifier_value):
         for channel in self.channels:
             if identifier_attribute == ChannelTypes.ID:
                 if channel.id == identifier_value:
@@ -65,6 +71,12 @@ class ChannelPool:
             if identifier_attribute == ChannelTypes.USERNAME:
                 if channel.user == identifier_value:
                     return channel
+
+    def add_channel(self, identifier_attribute: ChannelTypes, identifier_value):
+        existing_channel = self.get_channel(identifier_attribute, identifier_value)
+        if existing_channel:
+            return existing_channel
+
         new_channel = Channel.get_channel(identifier_attribute, identifier_value)
         self.channels.append(new_channel)
         return new_channel

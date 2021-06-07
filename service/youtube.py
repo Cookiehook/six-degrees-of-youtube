@@ -32,7 +32,6 @@ class YoutubeApi:
         }
 
         response = requests.get(url, params=params)
-        response.raise_for_status()
         # TODO - Check that items is not None
         return response.json()['items']
 
@@ -71,7 +70,6 @@ class YoutubeApi:
             params['forUsername'] = username
 
         response = requests.get(url, params=params)
-        response.raise_for_status()
         # TODO - Check one and only one channel is found
         return response.json()['items'][0]
 
@@ -85,7 +83,6 @@ class YoutubeApi:
         }
 
         response = requests.get(url, params=params)
-        response.raise_for_status()
         return self.get_channel_for_id_name(response.json()['items'][0]['snippet']['channelId'])
 
     def get_videos_for_playlist(self, playlist_id):
@@ -98,13 +95,11 @@ class YoutubeApi:
         }
 
         response = requests.get(url, params=params)
-        response.raise_for_status()
         all_videos = response.json()['items']
 
         while 'nextPageToken' in response.json():
             params['pageToken'] = response.json()['nextPageToken']
             response = requests.get(url, params=params)
-            response.raise_for_status()
             all_videos.extend(response.json()['items'])
 
         return self.filter_video_details(all_videos)

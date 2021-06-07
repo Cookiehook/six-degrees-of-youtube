@@ -19,6 +19,9 @@ class Search(YoutubeObject):
         else:
             raise NotImplemented(f"Search not implemented for {api_response['id']['kind']}")
 
+    def __repr__(self):
+        return self.title + " - " + self.kind.value + " - " + self.id
+
     @classmethod
     def search(cls, search_term, object_type: SearchTypes, max_results=5):
         """
@@ -28,7 +31,6 @@ class Search(YoutubeObject):
         :param max_results: Max number of results to return
         :return: Search object
         """
-        assert isinstance(object_type, SearchTypes)
         params = {
             'key': cls.api_key,
             'part': 'snippet',
@@ -40,6 +42,5 @@ class Search(YoutubeObject):
             params['type'] = object_type.value
 
         response = cls.get('search', params=params)
-        response.raise_for_status()
         items = response.json().get('items')
         return [cls(item) for item in items]

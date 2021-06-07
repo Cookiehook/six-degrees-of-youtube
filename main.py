@@ -8,5 +8,3 @@ if __name__ == '__main__':
     uploads_playlist = client.find_channel_by_title('Violet Orlandi')['contentDetails']['relatedPlaylists']['uploads']
     all_videos = client.get_videos_for_playlist(uploads_playlist)
     related_channels = client.get_related_channels(all_videos)
-
-    print()

@@ -1,6 +1,8 @@
 import os
+from copy import deepcopy
 
 import requests
+from requests import HTTPError
 
 
 class YoutubeObject:
@@ -10,4 +12,13 @@ class YoutubeObject:
 
     @staticmethod
     def get(endpoint, **kwargs):
-        return requests.get(YoutubeObject.base_url + endpoint, **kwargs)
+        logged_args = deepcopy(kwargs)['params']
+        del logged_args['key']
+
+        print(f"Querying API for '{endpoint}' with parameters '{logged_args}")
+        response = requests.get(YoutubeObject.base_url + endpoint, **kwargs)
+        response.raise_for_status()
+        if 'items' not in response.json() or len(response.json()['items']) == 0:
+            raise HTTPError('API responded with no items')
+
+        return response
