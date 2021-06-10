@@ -2,10 +2,10 @@ from copy import copy
 
 from requests import HTTPError
 
-from models.channel import ChannelPool, Channel, ChannelTypes
-from models.collaborations import CollaborationPool
-from models.search import SearchPool, SearchTypes
-from models.video import VideoPool
+from src.models.channel import ChannelPool, Channel, ChannelTypes
+from src.models import CollaborationPool
+from src.models.search import SearchPool, SearchTypes
+from src.models import VideoPool
 
 
 def find_matching_title(search_results, possible_titles):

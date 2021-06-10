@@ -2,7 +2,7 @@ import re
 
 from requests import HTTPError
 
-from models.youtube_object import YoutubeObject
+from src.models import YoutubeObject
 
 
 class Video(YoutubeObject):
