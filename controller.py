@@ -46,12 +46,14 @@ def entrypoint():
                 guest_urls = video.get_collaborator_urls_from_description()
                 guest_users = video.get_collaborator_users_from_description()
 
-                print("Parsing Found Channel IDs and Videos")
                 for guest_id in guest_ids:
+                    print(f"Parsing Found Channel ID '{guest_id}'")
                     try:
                         guest = channel_pool.add_channel(ChannelTypes.ID, guest_id)
                         collaborations.add(host, guest, video)
                     except HTTPError as e:
+                        if '403 Client Error' in e.args[0]:
+                            raise
                         print(f"ERROR - {e}")
 
                 # There's no delimiter to show how many words after the @ in a video title are the actual channel title
@@ -60,8 +62,8 @@ def entrypoint():
                 # To accommodate this, we search for all possible combination of words that could make up
                 # the channel name. eg: "Halocene|Halocene ft." / "Violet|Violet Orlandi" / "Lollia"
                 # We assume the longest successful match is the correct one.
-                print("Parsing Found Channel Titles")
                 for guest_title in guest_titles:
+                    print(f"Parsing Found Channel Title '{guest_title}'")
                     possible_titles = []
                     title_words = guest_title.split()
                     for idx, word in enumerate(title_words):
@@ -76,8 +78,8 @@ def entrypoint():
                         channel_pool.channels.append(guest)
                     collaborations.add(host, guest, video)
 
-                print("Parsing Found Channel URLs")
                 for guest_url in guest_urls:
+                    print(f"Parsing Found Channel URL '{guest_url}'")
                     guest = channel_pool.get_channel(ChannelTypes.URL, guest_url)
                     if not guest:
                         guest_searches_list = search_pool.search(target_name)
@@ -98,12 +100,14 @@ def entrypoint():
                                 collaborations.add(host, guest, video)
                                 break
 
-                print("Parsing Found Channel Usernames")
                 for guest_username in guest_users:
+                    print(f"Parsing Found Channel Username '{guest_username}'")
                     try:
                         guest = channel_pool.add_channel(ChannelTypes.USERNAME, guest_username)
                         collaborations.add(host, guest, video)
                     except HTTPError as e:
+                        if '403 Client Error' in e.args[0]:
+                            raise
                         print(f"ERROR - {e}")
 
             host.processed = True

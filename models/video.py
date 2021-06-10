@@ -45,6 +45,7 @@ class Video(YoutubeObject):
     def get_collaborator_ids_from_description(self):
         channel_ids = re.findall('youtube.com/channel/([a-zA-Z0-9_\-]+)', self.description)
         video_ids = re.findall('youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', self.description)
+        video_ids.extend(re.findall('youtu.be/([a-zA-Z0-9_\-]+)', self.description))
 
         for video_id in video_ids:
             try:

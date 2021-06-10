@@ -77,14 +77,18 @@ class ChannelPool:
         return f"({len(self.channels)}) " + ", ".join([c.title for c in self.channels])
 
     def get_channel(self, identifier_attribute: ChannelTypes, identifier_value):
-        for channel in self.channels:
-            if identifier_attribute == ChannelTypes.ID:
+        if identifier_attribute == ChannelTypes.ID:
+            for channel in self.channels:
                 if channel.id == identifier_value:
                     return channel
-            if identifier_attribute == ChannelTypes.USERNAME:
+
+        if identifier_attribute == ChannelTypes.USERNAME:
+            for channel in self.channels:
                 if channel.user and channel.user.upper() == identifier_value.upper():
                     return channel
-            if identifier_attribute == ChannelTypes.URL:
+
+        if identifier_attribute == ChannelTypes.URL:
+            for channel in self.channels:
                 if channel.url and channel.url.upper() == identifier_value.upper():
                     return channel
 
