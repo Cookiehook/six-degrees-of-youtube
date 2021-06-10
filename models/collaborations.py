@@ -27,9 +27,9 @@ class CollaborationPool:
         return cls._instance
 
     def add(self, channel_1, channel_2, video):
-        if channel_1 == channel_2:
+        if channel_1.id == channel_2.id:
             return  # Happens when an artist references another of their videos in the description
         for collab in self.collaborations:
-            if ({channel_1, channel_2} == {collab.channel_1, collab.channel_2}) and video == collab.video:
+            if ({channel_1.id, channel_2.id} == {collab.channel_1.id, collab.channel_2.id}) and video == collab.video:
                 return  # Already recorded this video and pairing, don't repeat
         self.collaborations.append(Collaboration(channel_1, channel_2, video))

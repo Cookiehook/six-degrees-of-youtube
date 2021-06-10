@@ -39,7 +39,7 @@ class Search(YoutubeObject):
             'key': cls.api_key,
             'part': 'snippet',
             'q': search_term,
-            'maxResults': max_results,
+            'maxResults': 5,
             'type': ",".join([t.value for t in object_types])
         }
 
@@ -62,10 +62,10 @@ class SearchPool:
             cls._instance = cls.__new__(cls)
         return cls._instance
 
-    def search(self, search_term, object_types: list = None, max_results=5):
+    def search(self, search_term, object_types: list = None):
         if not object_types:
             object_types = [SearchTypes.CHANNEL, SearchTypes.VIDEO]
         search_id = f"{search_term} - {','.join([t.value for t in object_types])}"
         if search_id not in self.searches:
-            self.searches[search_id] = Search.search(search_term, object_types, max_results)
+            self.searches[search_id] = Search.search(search_term, object_types)
         return self.searches[search_id]

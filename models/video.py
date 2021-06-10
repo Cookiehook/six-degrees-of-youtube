@@ -32,7 +32,7 @@ class Video(YoutubeObject):
         return cls(response.json()['items'][0])
 
     def get_collaborators_from_title(self):
-        illegal_characters = ['(', ')', ',']
+        illegal_characters = ['(', ')', ',', '@ ']
         for char in illegal_characters:
             self.title = self.title.replace(char, '')
 

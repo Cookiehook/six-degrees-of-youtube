@@ -17,7 +17,8 @@ class YoutubeObject:
 
         print(f"Querying API for '{endpoint}' with parameters '{logged_args}")
         response = requests.get(YoutubeObject.base_url + endpoint, **kwargs)
-        response.raise_for_status()
+        if response.status_code < 200 or response.status_code >= 400:
+            raise HTTPError(response.json())
         if 'items' not in response.json() or len(response.json()['items']) == 0:
             raise HTTPError('API responded with no items')
 

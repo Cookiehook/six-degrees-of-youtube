@@ -1,3 +1,5 @@
+from copy import copy
+
 from requests import HTTPError
 
 from models.channel import ChannelPool, Channel, ChannelTypes
@@ -23,7 +25,7 @@ def entrypoint():
     video_pool = VideoPool.instance()
     collaborations = CollaborationPool.instance()
 
-    target_name = 'Halocene'
+    target_name = 'Violet Orlandi'
     target_searches_list = search_pool.search(target_name, [SearchTypes.CHANNEL])
     target_search = [s for s in target_searches_list if s.title == target_name][0]
     if not target_search:
@@ -31,9 +33,10 @@ def entrypoint():
 
     channel_pool.add_channel(ChannelTypes.ID, target_search.id)
 
-    iterations = 0
+    iterations = 1
     while iterations < 6:
-        for host in channel_pool.channels:
+        channel_loop = copy(channel_pool.channels)
+        for host in channel_loop:
             # Skip channels that we've already handled, but leave them in the list to allow re-use of cache
             if host.processed:
                 continue
@@ -68,7 +71,11 @@ def entrypoint():
                     title_words = guest_title.split()
                     for idx, word in enumerate(title_words):
                         possible_titles.append(' '.join(title_words[:idx + 1]))
-                    guest_searches_list = search_pool.search("|".join(possible_titles), [SearchTypes.CHANNEL], 50)
+                    try:
+                        guest_searches_list = search_pool.search("|".join(possible_titles), [SearchTypes.CHANNEL])
+                    except HTTPError:
+                        print(f"ERROR - No search results for channel named '{guest_title}'")
+                        continue
                     possible_titles.reverse()
                     guest = find_matching_title(guest_searches_list, possible_titles)
                     if not guest:
@@ -82,14 +89,22 @@ def entrypoint():
                     print(f"Parsing Found Channel URL '{guest_url}'")
                     guest = channel_pool.get_channel(ChannelTypes.URL, guest_url)
                     if not guest:
-                        guest_searches_list = search_pool.search(target_name)
+                        try:
+                            guest_searches_list = search_pool.search(guest_url)
+                        except HTTPError:
+                            print(f"ERROR - Couldn't find channel with URL '{guest_url}'")
+                            continue
+
                         for result in guest_searches_list:
 
-                            if result.kind == SearchTypes.CHANNEL:
-                                guest = Channel.get_channel(ChannelTypes.ID, result.id)
-                            elif result.kind == SearchTypes.VIDEO:
-                                video = video_pool.get_video(result.id)
-                                guest = Channel.get_channel(ChannelTypes.ID, video.channel_id)
+                            if guest := channel_pool.get_channel(ChannelTypes.ID, result.id):
+                                pass  # We already have this channel cached, re-use it
+                            else:
+                                if result.kind == SearchTypes.CHANNEL:
+                                    guest = Channel.get_channel(ChannelTypes.ID, result.id)
+                                elif result.kind == SearchTypes.VIDEO:
+                                    video = video_pool.get_video(result.id)
+                                    guest = Channel.get_channel(ChannelTypes.ID, video.channel_id)
 
                             if guest.url == guest_url:
                                 old_channel = channel_pool.get_channel(ChannelTypes.ID, guest.id)
