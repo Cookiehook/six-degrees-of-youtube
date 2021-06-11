@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.models import YoutubeObject
+from src.models.youtube_object import YoutubeObject
 
 
 class SearchTypes(Enum):

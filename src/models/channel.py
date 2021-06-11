@@ -1,7 +1,7 @@
 from enum import Enum
 
-from src.models import Video, VideoPool
-from src.models import YoutubeObject
+from src.models.video import Video, VideoPool
+from src.models.youtube_object import YoutubeObject
 
 
 class ChannelTypes(Enum):

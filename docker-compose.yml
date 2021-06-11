@@ -1,0 +1,17 @@
+version: "3.7"
+services:
+#  youtube-stub:
+#    build: .
+#    image: youtube-stub
+#    ports:
+#      - "127.0.0.1:5000:5000"
+#    environment:
+#      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:bob@youtube-db:5432
+
+  youtube-db:
+    image: postgres
+    command: [ "postgres", "-c", "log_statement=all" ]
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=bob
