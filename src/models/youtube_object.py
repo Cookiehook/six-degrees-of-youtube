@@ -7,7 +7,7 @@ from requests import HTTPError
 
 class YoutubeObject:
 
-    base_url = 'https://www.googleapis.com/youtube/v3/'
+    base_url = os.getenv('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3/')
     api_key = os.environ['YOUTUBE_API_KEY']
 
     @staticmethod
