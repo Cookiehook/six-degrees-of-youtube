@@ -57,7 +57,9 @@ class Video(YoutubeObject):
         return channel_ids
 
     def get_collaborator_urls_from_description(self):
-        return re.findall('youtube.com/c/([a-zA-Z0-9_\-]+)', self.description)
+        match_1 = re.findall('youtube.com/c/([a-zA-Z0-9_\-]+)', self.description)
+        match_2 = re.findall('youtube.com/([a-zA-Z0-9_\-]+\s)', self.description)
+        return [url.strip() for url in match_1 + match_2]
 
     def get_collaborator_users_from_description(self):
         return re.findall('youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)

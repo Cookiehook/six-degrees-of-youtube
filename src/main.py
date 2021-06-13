@@ -33,14 +33,10 @@ def entrypoint():
 
     channel_pool.add_channel(ChannelTypes.ID, target_search.id)
 
-    iterations = 1
-    while iterations < 6:
+    iteration = 1
+    while iteration <= 2:
         channel_loop = copy(channel_pool.channels)
         for host in channel_loop:
-            # Skip channels that we've already handled, but leave them in the list to allow re-use of cache
-            if host.processed:
-                continue
-
             for video in host.get_uploads():
                 print(f"Parsing video '{video.title}' from '{host.title}'")
 
@@ -52,8 +48,11 @@ def entrypoint():
                 for guest_id in guest_ids:
                     print(f"Parsing Found Channel ID '{guest_id}'")
                     try:
-                        guest = channel_pool.add_channel(ChannelTypes.ID, guest_id)
-                        collaborations.add(host, guest, video)
+                        if iteration == 1:
+                            channel_pool.add_channel(ChannelTypes.ID, guest_id)
+                        elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest_id):
+                            collaborations.add(host, channel_pool.get_channel(ChannelTypes.ID, guest_id), video)
+
                     except HTTPError as e:
                         if '403 Client Error' in e.args[0]:
                             raise
@@ -81,53 +80,57 @@ def entrypoint():
                     if not guest:
                         print(f"ERROR - Couldn't find channel with title '{guest_title}'")
                         continue
-                    if not channel_pool.get_channel(ChannelTypes.ID, guest.id):
-                        channel_pool.channels.append(guest)
-                    collaborations.add(host, guest, video)
+
+                    if iteration == 1:
+                        if not channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                            channel_pool.channels.append(guest)
+                    elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                        collaborations.add(host, guest, video)
 
                 for guest_url in guest_urls:
                     print(f"Parsing Found Channel URL '{guest_url}'")
-                    guest = channel_pool.get_channel(ChannelTypes.URL, guest_url)
-                    if not guest:
-                        try:
-                            guest_searches_list = search_pool.search(guest_url)
-                        except HTTPError:
-                            print(f"ERROR - Couldn't find channel with URL '{guest_url}'")
-                            continue
+                    try:
+                        guest_searches_list = search_pool.search(guest_url)
+                    except HTTPError:
+                        print(f"ERROR - Couldn't find channel with URL '{guest_url}'")
+                        continue
 
-                        for result in guest_searches_list:
+                    for result in guest_searches_list:
 
-                            if guest := channel_pool.get_channel(ChannelTypes.ID, result.id):
-                                pass  # We already have this channel cached, re-use it
+                        if result.kind == SearchTypes.CHANNEL and channel_pool.get_channel(ChannelTypes.ID, result.id):
+                            guest = channel_pool.get_channel(ChannelTypes.ID, result.id)
+                        else:
+                            if result.kind == SearchTypes.CHANNEL:
+                                guest = Channel.get_channel(ChannelTypes.ID, result.id)
                             else:
-                                if result.kind == SearchTypes.CHANNEL:
-                                    guest = Channel.get_channel(ChannelTypes.ID, result.id)
-                                elif result.kind == SearchTypes.VIDEO:
-                                    video = video_pool.get_video(result.id)
-                                    guest = Channel.get_channel(ChannelTypes.ID, video.channel_id)
+                                video = video_pool.get_video(result.id)
+                                guest = Channel.get_channel(ChannelTypes.ID, video.channel_id)
 
-                            if guest.url == guest_url:
+                        if guest.url and guest.url.upper() == guest_url.upper():
+                            if iteration == 1:
                                 old_channel = channel_pool.get_channel(ChannelTypes.ID, guest.id)
                                 if old_channel:
                                     old_channel.url = guest.url
                                 else:
                                     channel_pool.channels.append(guest)
-                                collaborations.add(host, guest, video)
                                 break
+                            elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                                collaborations.add(host, guest, video)
 
                 for guest_username in guest_users:
                     print(f"Parsing Found Channel Username '{guest_username}'")
                     try:
-                        guest = channel_pool.add_channel(ChannelTypes.USERNAME, guest_username)
-                        collaborations.add(host, guest, video)
+                        if iteration == 1:
+                            channel_pool.add_channel(ChannelTypes.USERNAME, guest_username)
+                        elif iteration == 2 and channel_pool.get_channel(ChannelTypes.USERNAME, guest_username):
+                            collaborations.add(host, channel_pool.get_channel(ChannelTypes.USERNAME, guest_username), video)
+
                     except HTTPError as e:
                         if '403 Client Error' in e.args[0]:
                             raise
                         print(f"ERROR - {e}")
 
-            host.processed = True
-
-        iterations += 1
+        iteration += 1
 
 
 if __name__ == '__main__':
