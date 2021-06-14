@@ -8,7 +8,7 @@ class ChannelCache:
     def __repr__(self):
         return f"({len(self.collection)}) " + ", ".join([c.title for c in self.collection])
 
-    def get_channel_from_cache(self, identifier_attribute: ChannelFilters, identifier_value):
+    def get_from_cache(self, identifier_attribute: ChannelFilters, identifier_value):
         if identifier_attribute == ChannelFilters.ID:
             for channel in self.collection:
                 if channel.id == identifier_value:
@@ -34,7 +34,7 @@ class ChannelCache:
         :param identifier_value: Value of attribute
         :return: Channel instance from cache or Youtube API
         """
-        existing_channel = self.get_channel_from_cache(identifier_attribute, identifier_value)
+        existing_channel = self.get_from_cache(identifier_attribute, identifier_value)
         if existing_channel:
             return existing_channel
 

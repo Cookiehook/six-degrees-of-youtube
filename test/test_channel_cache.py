@@ -9,7 +9,7 @@ def test_collection_static():
     cache_1 = ChannelCache()
     cache_1.collection.extend([1, 2, 3])
 
-    cache_2 = ChannelCache
+    cache_2 = ChannelCache()
     assert cache_2.collection == [1, 2, 3]
 
 
@@ -25,7 +25,7 @@ def test_get_from_cache_id_present():
     cache = ChannelCache()
     target_channel = MagicMock(id='id_3')
     cache.collection.extend([MagicMock(id='id_1'), MagicMock(id='id_2'), target_channel])
-    channel = cache.get_channel_from_cache(ChannelFilters.ID, 'id_3')
+    channel = cache.get_from_cache(ChannelFilters.ID, 'id_3')
     assert channel is target_channel
 
 
@@ -33,7 +33,7 @@ def test_get_from_cache_id_missing():
     ChannelCache.collection = []
     cache = ChannelCache()
     cache.collection.extend([MagicMock(id='id_1'), MagicMock(id='id_2'), MagicMock(id='id_3')])
-    channel = cache.get_channel_from_cache(ChannelFilters.ID, 'id_4')
+    channel = cache.get_from_cache(ChannelFilters.ID, 'id_4')
     assert channel is None
 
 
@@ -42,7 +42,7 @@ def test_get_from_cache_username_present():
     cache = ChannelCache()
     target_channel = MagicMock(username='username_3')
     cache.collection.extend([MagicMock(username='username_1'), MagicMock(username=None), target_channel])
-    channel = cache.get_channel_from_cache(ChannelFilters.USERNAME, 'username_3')
+    channel = cache.get_from_cache(ChannelFilters.USERNAME, 'username_3')
     assert channel is target_channel
 
 
@@ -50,7 +50,7 @@ def test_get_from_cache_username_missing():
     ChannelCache.collection = []
     cache = ChannelCache()
     cache.collection.extend([MagicMock(username='username_1'), MagicMock(username=None), MagicMock(username='username_3')])
-    channel = cache.get_channel_from_cache(ChannelFilters.USERNAME, 'username_4')
+    channel = cache.get_from_cache(ChannelFilters.USERNAME, 'username_4')
     assert channel is None
 
 
@@ -59,7 +59,7 @@ def test_get_from_cache_url_present():
     cache = ChannelCache()
     target_channel = MagicMock(url='url_3')
     cache.collection.extend([MagicMock(url='url_1'), MagicMock(username=None), target_channel])
-    channel = cache.get_channel_from_cache(ChannelFilters.URL, 'url_3')
+    channel = cache.get_from_cache(ChannelFilters.URL, 'url_3')
     assert channel is target_channel
 
 
@@ -67,7 +67,7 @@ def test_get_from_cache_url_missing():
     ChannelCache.collection = []
     cache = ChannelCache()
     cache.collection.extend([MagicMock(url='url_1'), MagicMock(url=None), MagicMock(url='url_3')])
-    channel = cache.get_channel_from_cache(ChannelFilters.URL, 'url_4')
+    channel = cache.get_from_cache(ChannelFilters.URL, 'url_4')
     assert channel is None
 
 
