@@ -1,4 +1,4 @@
-from src.enums import ChannelFilters
+from src_v3.enums import ChannelFilters
 from src.models.video import Video, VideoPool
 from src.models.youtube_object import YoutubeObject
 

@@ -2,7 +2,9 @@ import re
 
 from requests import HTTPError
 
-from src.models.youtube_object import YoutubeObject
+from src.models.abstract_classes import YoutubeObject
+
+from src.models.abstract_classes import Singleton
 
 
 class Video(YoutubeObject):
@@ -64,24 +66,16 @@ class Video(YoutubeObject):
         return re.findall(r'youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)
 
 
-class VideoPool:
+class VideoPool(Singleton):
 
-    _instance = None
-    videos = {}
+    def get_video_from_cache(self, video_id):
+        return self.collection.get(video_id)
 
-    def __init__(self):
-        raise RuntimeError('Call instance() instead')
-
-    @classmethod
-    def instance(cls):
-        if cls._instance is None:
-            cls._instance = cls.__new__(cls)
-        return cls._instance
-
-    def get_video(self, video_id):
-        if video_id not in self.videos:
-            self.videos[video_id] = Video.call_api(video_id)
-        return self.videos[video_id]
+    def add(self, video_id):
+        video = self.get_video_from_cache(video_id)
+        if not video:
+            self.collection[video_id] = Video.call_api(video_id)
+        return self.get_video_from_cache(video_id)
 
     def __repr__(self):
-        return f"({len(self.videos.keys())})"
+        return f"({len(self.collection.keys())})"
