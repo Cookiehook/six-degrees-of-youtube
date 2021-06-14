@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 from src_v3.caches.video_cache import VideoCache
-from src_v3.models.video import Video
 
 
 def test_collection_static():
@@ -44,7 +43,7 @@ def test_add_to_cache_already_existing():
 def test_add_to_cache_new():
     VideoCache.collection = {}
     cache = VideoCache()
-    get_mock = MagicMock(return_value=Video('456', 'channel', 'title', 'description'))
+    get_mock = MagicMock(return_value=MagicMock())
     cache.collection['123'] = MagicMock()
     with patch('src_v3.models.video.Video.from_api', get_mock):
         new_video = cache.add('456')
