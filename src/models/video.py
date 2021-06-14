@@ -11,6 +11,9 @@ class Video(YoutubeObject):
         self.title = title
         self.description = description
 
+    def __repr__(self):
+        return self.title
+
     @classmethod
     def from_api(cls, video_id):
         params = {

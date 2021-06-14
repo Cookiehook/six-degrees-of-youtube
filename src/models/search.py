@@ -30,5 +30,5 @@ class Search(YoutubeObject):
         items, _ = cls.get('search', params=params)
         return [cls(item['id']['kind'],
                     item['id'].get('channelId') if item['id']['kind'] == 'youtube#channel' else item['id'].get('videoId'),
-                    item['id']['title']
+                    item['snippet']['title']
                     ) for item in items]

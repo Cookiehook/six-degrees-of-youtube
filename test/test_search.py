@@ -17,9 +17,9 @@ def test_repr():
 
 def test_from_api():
     get_mock = MagicMock(return_value=([
-        {"id": {"kind": "youtube#channel", "channelId": "channel_id", "title": "Channel Title"}},
-        {"id": {"kind": "youtube#video", "videoId": "video_id", "title": "Video Title"}},
-        {"id": {"kind": "youtube#channel", "channelId": "channel_id_2", "title": "Channel Title 2"}},
+        {"id": {"kind": "youtube#channel", "channelId": "channel_id"}, "snippet": {"title": "Channel Title"}},
+        {"id": {"kind": "youtube#video", "videoId": "video_id"}, "snippet": {"title": "Video Title"}},
+        {"id": {"kind": "youtube#channel", "channelId": "channel_id_2"}, "snippet": {"title": "Channel Title 2"}},
         ], None))
 
     with patch('src.models.search.Search.get', get_mock):

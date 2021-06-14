@@ -7,9 +7,12 @@ class Channel(YoutubeObject):
     def __init__(self, id, title, url, uploads_id, username=None):
         self.id = id
         self.title = title
-        self.url = url
+        self.url = url if url else ''
         self.uploads_id = uploads_id
         self.username = username
+
+    def __repr__(self):
+        return self.title
 
     @classmethod
     def from_api(cls, identifier_attribute: ChannelFilters, identifier_value: str):

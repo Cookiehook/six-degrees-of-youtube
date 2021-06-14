@@ -20,11 +20,6 @@ def find_matching_title(search_results, possible_titles):
 
 
 def entrypoint():
-    channel_pool = ChannelPool.instance()
-    search_pool = SearchPool.instance()
-    video_pool = VideoPool.instance()
-    collaborations = CollaborationPool.instance()
-
     target_name = 'Violet Orlandi'
     target_searches_list = search_pool.call_api(target_name, [SearchTypes.CHANNEL])
     target_search = [s for s in target_searches_list if s.title == target_name][0]

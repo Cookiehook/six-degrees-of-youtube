@@ -13,6 +13,8 @@ class YoutubeObject:
         params['key'] = os.environ['YOUTUBE_API_KEY']
 
         response = requests.get(base_url + endpoint, params=params)
+        if response.status_code == 403:
+            raise RuntimeError(response.json())
         if response.status_code < 200 or response.status_code >= 400:
             raise HTTPError(response.json())
         if 'items' not in response.json() or len(response.json()['items']) == 0:
