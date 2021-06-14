@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 
-from src_v3.models.search import Search
+from src.models.search import Search
 
 
 def test_constructor():
@@ -22,7 +22,7 @@ def test_from_api():
         {"id": {"kind": "youtube#channel", "channelId": "channel_id_2", "title": "Channel Title 2"}},
         ], None))
 
-    with patch('src_v3.models.search.Search.get', get_mock):
+    with patch('src.models.search.Search.get', get_mock):
         results = Search.from_api('test', 'channel,playlist')
     assert len(results) == 3
     assert results[0].kind == 'youtube#channel'

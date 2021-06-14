@@ -1,4 +1,4 @@
-from src_v3.models.search import Search
+from src.models.search import Search
 
 
 class SearchCache:

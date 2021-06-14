@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from src_v3.caches.search_cache import SearchCache
+from src.caches.search_cache import SearchCache
 
 
 def test_collection_static():
@@ -34,7 +34,7 @@ def test_add_to_cache_already_existing():
     existing_search = MagicMock()
     get_mock = MagicMock()
     cache.collection['123'] = existing_search
-    with patch('src_v3.models.video.Video.from_api', get_mock):
+    with patch('src.models.video.Video.from_api', get_mock):
         new_video = cache.add('123', 'channel')
     assert new_video == existing_search
     assert get_mock.call_count == 0
@@ -45,7 +45,7 @@ def test_add_to_cache_new():
     cache = SearchCache()
     get_mock = MagicMock(return_value=MagicMock())
     cache.collection['123'] = MagicMock()
-    with patch('src_v3.models.search.Search.from_api', get_mock):
+    with patch('src.models.search.Search.from_api', get_mock):
         new_search = cache.add('456', 'channel')
     assert len(cache.collection.keys()) == 2
     assert cache.collection.get('456') == new_search

@@ -1,4 +1,4 @@
-from src_v3.models.video import Video
+from src.models.video import Video
 
 
 class VideoCache:

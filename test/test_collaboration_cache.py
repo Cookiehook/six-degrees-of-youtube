@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from src_v3.caches.collaboration_cache import CollaborationCache
+from src.caches.collaboration_cache import CollaborationCache
 
 
 def test_collection_static():

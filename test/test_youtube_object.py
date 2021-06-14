@@ -4,7 +4,7 @@ import pytest
 import responses
 from requests import HTTPError
 
-from src_v3.models.youtube_object import YoutubeObject
+from src.models.youtube_object import YoutubeObject
 
 
 @responses.activate

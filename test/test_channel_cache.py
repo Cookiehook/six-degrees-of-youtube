@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from src_v3.caches.channel_cache import ChannelCache
-from src_v3.enums import ChannelFilters
+from src.caches.channel_cache import ChannelCache
+from src.enums import ChannelFilters
 
 
 def test_collection_static():
@@ -77,7 +77,7 @@ def test_add_channel_already_exists():
     existing_channel = MagicMock(id='id')
     api_mock = MagicMock()
     cache.collection.append(existing_channel)
-    with patch('src_v3.caches.channel_cache.Channel.from_api', api_mock):
+    with patch('src.caches.channel_cache.Channel.from_api', api_mock):
         new_channel = cache.add(ChannelFilters.ID, 'id')
     assert new_channel is existing_channel
     assert api_mock.call_count == 0
@@ -87,7 +87,7 @@ def test_add_new_channel():
     ChannelCache.collection = []
     cache = ChannelCache()
     api_mock = MagicMock(return_value='mock_channel')
-    with patch('src_v3.caches.channel_cache.Channel.from_api', api_mock):
+    with patch('src.caches.channel_cache.Channel.from_api', api_mock):
         new_channel = cache.add(ChannelFilters.ID, 'id')
     assert new_channel == 'mock_channel'
 
@@ -100,7 +100,7 @@ def test_add_channel_update_username():
     cache.collection.append(existing_channel)
 
     api_mock = MagicMock(return_value=new_channel)
-    with patch('src_v3.caches.channel_cache.Channel.from_api', api_mock):
+    with patch('src.caches.channel_cache.Channel.from_api', api_mock):
         new_channel = cache.add(ChannelFilters.USERNAME, 'id')
     assert new_channel == existing_channel
     assert existing_channel.username == 'new_username'

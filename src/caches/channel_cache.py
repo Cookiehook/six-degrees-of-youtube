@@ -1,5 +1,5 @@
-from src_v3.enums import ChannelFilters
-from src_v3.models.channel import Channel
+from src.enums import ChannelFilters
+from src.models.channel import Channel
 
 
 class ChannelCache:

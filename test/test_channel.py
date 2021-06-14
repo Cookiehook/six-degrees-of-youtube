@@ -2,8 +2,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from src_v3.enums import ChannelFilters
-from src_v3.models.channel import Channel
+from src.enums import ChannelFilters
+from src.models.channel import Channel
 
 
 def test_constructor_with_username():
@@ -36,7 +36,7 @@ def test_from_api_with_id_success():
         }
     }], None))
 
-    with patch('src_v3.models.channel.Channel.get', get_mock):
+    with patch('src.models.channel.Channel.get', get_mock):
         channel = Channel.from_api(ChannelFilters.ID, 'channel_id')
     assert channel.id == 'channel_id'
     assert channel.title == 'Channel Title'
@@ -59,7 +59,7 @@ def test_from_api_with_username_success():
         }
     }], None))
 
-    with patch('src_v3.models.channel.Channel.get', get_mock):
+    with patch('src.models.channel.Channel.get', get_mock):
         channel = Channel.from_api(ChannelFilters.USERNAME, 'username')
     assert channel.id == 'channel_id'
     assert channel.title == 'Channel Title'
@@ -70,7 +70,7 @@ def test_from_api_with_username_success():
 
 def test_from_api_multiple_channels_fail():
     get_mock = MagicMock(return_value=([{'id': 'channel_id_1'}, {'id': 'channel_id_2'}], None))
-    with patch('src_v3.models.channel.Channel.get', get_mock):
+    with patch('src.models.channel.Channel.get', get_mock):
         with pytest.raises(AssertionError) as err:
             Channel.from_api(ChannelFilters.ID, 'channel_id')
         assert err.value.args[0] == "Returned unexpected number of channels: [{'id': 'channel_id_1'}, {'id': 'channel_id_2'}]"

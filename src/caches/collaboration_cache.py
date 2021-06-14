@@ -1,4 +1,4 @@
-from src_v3.models.collaboration import Collaboration
+from src.models.collaboration import Collaboration
 
 
 class CollaborationCache:

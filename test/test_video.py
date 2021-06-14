@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src_v3.models.video import Video
+from src.models.video import Video
 
 
 def playlist_item_template(video_id='video_id', channel_id='channel_id', title='title', description='description'):
@@ -34,7 +34,7 @@ def test_from_api_success():
         }
     }], None))
 
-    with patch('src_v3.models.video.Video.get', get_mock):
+    with patch('src.models.video.Video.get', get_mock):
         video = Video.from_api('video_id')
     assert video.video_id == 'video_id'
     assert video.channel_id == 'channel_id'
@@ -45,7 +45,7 @@ def test_from_api_success():
 def test_from_api_multiple_returns():
     get_mock = MagicMock(return_value=([{'id': 'video_id_1'}, {'id': 'video_id_2)'}], None))
 
-    with patch('src_v3.models.video.Video.get', get_mock):
+    with patch('src.models.video.Video.get', get_mock):
         with pytest.raises(AssertionError) as err:
             Video.from_api('video_id')
         assert err.value.args[0] == "Returned unexpected number of videos: [{'id': 'video_id_1'}, {'id': 'video_id_2)'}]"
@@ -55,7 +55,7 @@ def test_from_playlist_one_page():
     def side_effect(url, params):
         return [playlist_item_template(video_id='id_1'), playlist_item_template(video_id='id_2'), playlist_item_template(video_id='id_3')], None
 
-    with patch('src_v3.models.video.Video.get', MagicMock(side_effect=side_effect)):
+    with patch('src.models.video.Video.get', MagicMock(side_effect=side_effect)):
         videos = Video.from_playlist('uploads_id')
 
     assert len(videos) == 3
@@ -72,7 +72,7 @@ def test_from_playlist_three_pages():
         if params.get('pageToken') == 'page_3':
             return [playlist_item_template(video_id='id_7'), playlist_item_template(video_id='id_8'), playlist_item_template(video_id='id_9')], None
 
-    with patch('src_v3.models.video.Video.get', MagicMock(side_effect=side_effect)):
+    with patch('src.models.video.Video.get', MagicMock(side_effect=side_effect)):
         videos = Video.from_playlist('uploads_id')
 
     assert len(videos) == 9
