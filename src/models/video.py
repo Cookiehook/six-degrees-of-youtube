@@ -20,9 +20,8 @@ class Video(YoutubeObject):
         return self.title + " - " + self.channel_id
 
     @classmethod
-    def get_video(cls, video_id):
+    def call_api(cls, video_id):
         params = {
-            'key': cls.api_key,
             'part': 'snippet',
             'id': video_id,
             'maxResults': 1
@@ -43,9 +42,9 @@ class Video(YoutubeObject):
         return []
 
     def get_collaborator_ids_from_description(self):
-        channel_ids = re.findall('youtube.com/channel/([a-zA-Z0-9_\-]+)', self.description)
-        video_ids = re.findall('youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', self.description)
-        video_ids.extend(re.findall('youtu.be/([a-zA-Z0-9_\-]+)', self.description))
+        channel_ids = re.findall(r'youtube.com/channel/([a-zA-Z0-9_\-]+)', self.description)
+        video_ids = re.findall(r'youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', self.description)
+        video_ids.extend(re.findall(r'youtu.be/([a-zA-Z0-9_\-]+)', self.description))
 
         for video_id in video_ids:
             try:
@@ -57,12 +56,12 @@ class Video(YoutubeObject):
         return channel_ids
 
     def get_collaborator_urls_from_description(self):
-        match_1 = re.findall('youtube.com/c/([a-zA-Z0-9_\-]+)', self.description)
-        match_2 = re.findall('youtube.com/([a-zA-Z0-9_\-]+\s)', self.description)
+        match_1 = re.findall(r'youtube.com/c/([a-zA-Z0-9_\-]+)', self.description)
+        match_2 = re.findall(r'youtube.com/([a-zA-Z0-9_\-]+\s)', self.description)
         return [url.strip() for url in match_1 + match_2]
 
     def get_collaborator_users_from_description(self):
-        return re.findall('youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)
+        return re.findall(r'youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)
 
 
 class VideoPool:
@@ -73,7 +72,6 @@ class VideoPool:
     def __init__(self):
         raise RuntimeError('Call instance() instead')
 
-
     @classmethod
     def instance(cls):
         if cls._instance is None:
@@ -82,8 +80,8 @@ class VideoPool:
 
     def get_video(self, video_id):
         if video_id not in self.videos:
-            self.videos[video_id] = Video.get_video(video_id)
+            self.videos[video_id] = Video.call_api(video_id)
         return self.videos[video_id]
 
     def __repr__(self):
-        return f"({len(self.videos.keys())}) "
+        return f"({len(self.videos.keys())})"

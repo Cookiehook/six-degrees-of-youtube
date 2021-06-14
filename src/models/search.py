@@ -21,13 +21,13 @@ class Search(YoutubeObject):
             self.id = api_response['id']['videoId']
             self.title = api_response['snippet']['title']
         else:
-            raise NotImplemented(f"Search not implemented for {api_response['id']['kind']}")
+            raise NotImplementedError(f"Search not implemented for {api_response['id']['kind']}")
 
     def __repr__(self):
         return self.title + " - " + self.kind.value + " - " + self.id
 
     @classmethod
-    def search(cls, search_term, object_types, max_results=5):
+    def call_api(cls, search_term, object_types):
         """
 
         :param search_term: Term to search by
@@ -36,7 +36,6 @@ class Search(YoutubeObject):
         :return: Search object
         """
         params = {
-            'key': cls.api_key,
             'part': 'snippet',
             'q': search_term,
             'maxResults': 5,
@@ -67,5 +66,5 @@ class SearchPool:
             object_types = [SearchTypes.CHANNEL, SearchTypes.VIDEO]
         search_id = f"{search_term} - {','.join([t.value for t in object_types])}"
         if search_id not in self.searches:
-            self.searches[search_id] = Search.search(search_term, object_types)
+            self.searches[search_id] = Search.call_api(search_term, object_types)
         return self.searches[search_id]

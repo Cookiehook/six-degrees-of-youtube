@@ -6,10 +6,13 @@ verify_ssl = true
 requests = "*"
 flask = "*"
 flask_sqlalchemy = "*"
-psycopg2 = "*"
+psycopg2-binary = "*"
 jsonschema = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.9"

@@ -11,9 +11,9 @@ from src.models.video import VideoPool
 def find_matching_title(search_results, possible_titles):
     # Abstracted to separate method to allow return from nested loop
     for result in search_results:
-        guest = ChannelPool.instance().get_channel(ChannelTypes.ID, result.id)
+        guest = ChannelPool.instance().call_api(ChannelTypes.ID, result.id)
         if not guest:
-            guest = Channel.get_channel(ChannelTypes.ID, result.id)
+            guest = Channel.call_api(ChannelTypes.ID, result.id)
         for title_fragment in possible_titles:
             if guest.title == title_fragment:
                 return guest
@@ -26,7 +26,7 @@ def entrypoint():
     collaborations = CollaborationPool.instance()
 
     target_name = 'Violet Orlandi'
-    target_searches_list = search_pool.search(target_name, [SearchTypes.CHANNEL])
+    target_searches_list = search_pool.call_api(target_name, [SearchTypes.CHANNEL])
     target_search = [s for s in target_searches_list if s.title == target_name][0]
     if not target_search:
         raise FileNotFoundError(f"Couldn't find target channel: '{target_name}'")
@@ -50,8 +50,8 @@ def entrypoint():
                     try:
                         if iteration == 1:
                             channel_pool.add_channel(ChannelTypes.ID, guest_id)
-                        elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest_id):
-                            collaborations.add(host, channel_pool.get_channel(ChannelTypes.ID, guest_id), video)
+                        elif iteration == 2 and channel_pool.call_api(ChannelTypes.ID, guest_id):
+                            collaborations.add(host, channel_pool.call_api(ChannelTypes.ID, guest_id), video)
 
                     except HTTPError as e:
                         if '403 Client Error' in e.args[0]:
@@ -71,7 +71,7 @@ def entrypoint():
                     for idx, word in enumerate(title_words):
                         possible_titles.append(' '.join(title_words[:idx + 1]))
                     try:
-                        guest_searches_list = search_pool.search("|".join(possible_titles), [SearchTypes.CHANNEL])
+                        guest_searches_list = search_pool.call_api("|".join(possible_titles), [SearchTypes.CHANNEL])
                     except HTTPError:
                         print(f"ERROR - No search results for channel named '{guest_title}'")
                         continue
@@ -82,39 +82,39 @@ def entrypoint():
                         continue
 
                     if iteration == 1:
-                        if not channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                        if not channel_pool.call_api(ChannelTypes.ID, guest.id):
                             channel_pool.channels.append(guest)
-                    elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                    elif iteration == 2 and channel_pool.call_api(ChannelTypes.ID, guest.id):
                         collaborations.add(host, guest, video)
 
                 for guest_url in guest_urls:
                     print(f"Parsing Found Channel URL '{guest_url}'")
                     try:
-                        guest_searches_list = search_pool.search(guest_url)
+                        guest_searches_list = search_pool.call_api(guest_url)
                     except HTTPError:
                         print(f"ERROR - Couldn't find channel with URL '{guest_url}'")
                         continue
 
                     for result in guest_searches_list:
 
-                        if result.kind == SearchTypes.CHANNEL and channel_pool.get_channel(ChannelTypes.ID, result.id):
-                            guest = channel_pool.get_channel(ChannelTypes.ID, result.id)
+                        if result.kind == SearchTypes.CHANNEL and channel_pool.call_api(ChannelTypes.ID, result.id):
+                            guest = channel_pool.call_api(ChannelTypes.ID, result.id)
                         else:
                             if result.kind == SearchTypes.CHANNEL:
-                                guest = Channel.get_channel(ChannelTypes.ID, result.id)
+                                guest = Channel.call_api(ChannelTypes.ID, result.id)
                             else:
-                                video = video_pool.get_video(result.id)
-                                guest = Channel.get_channel(ChannelTypes.ID, video.channel_id)
+                                video = video_pool.call_api(result.id)
+                                guest = Channel.call_api(ChannelTypes.ID, video.channel_id)
 
                         if guest.url and guest.url.upper() == guest_url.upper():
                             if iteration == 1:
-                                old_channel = channel_pool.get_channel(ChannelTypes.ID, guest.id)
+                                old_channel = channel_pool.call_api(ChannelTypes.ID, guest.id)
                                 if old_channel:
                                     old_channel.url = guest.url
                                 else:
                                     channel_pool.channels.append(guest)
                                 break
-                            elif iteration == 2 and channel_pool.get_channel(ChannelTypes.ID, guest.id):
+                            elif iteration == 2 and channel_pool.call_api(ChannelTypes.ID, guest.id):
                                 collaborations.add(host, guest, video)
 
                 for guest_username in guest_users:
@@ -122,8 +122,8 @@ def entrypoint():
                     try:
                         if iteration == 1:
                             channel_pool.add_channel(ChannelTypes.USERNAME, guest_username)
-                        elif iteration == 2 and channel_pool.get_channel(ChannelTypes.USERNAME, guest_username):
-                            collaborations.add(host, channel_pool.get_channel(ChannelTypes.USERNAME, guest_username), video)
+                        elif iteration == 2 and channel_pool.call_api(ChannelTypes.USERNAME, guest_username):
+                            collaborations.add(host, channel_pool.call_api(ChannelTypes.USERNAME, guest_username), video)
 
                     except HTTPError as e:
                         if '403 Client Error' in e.args[0]:
