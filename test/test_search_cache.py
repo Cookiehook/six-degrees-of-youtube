@@ -21,8 +21,8 @@ def test_add_to_cache_already_existing():
     SearchCache.collection = {}
     existing_search = MagicMock()
     get_mock = MagicMock()
-    SearchCache.collection['123'] = existing_search
-    with patch('src.models.video.Video.from_api', get_mock):
+    SearchCache.collection['123 - channel'] = existing_search
+    with patch('src.models.search.Search.from_api', get_mock):
         new_video = SearchCache.add('123', 'channel')
     assert new_video == existing_search
     assert get_mock.call_count == 0
@@ -31,9 +31,9 @@ def test_add_to_cache_already_existing():
 def test_add_to_cache_new():
     SearchCache.collection = {}
     get_mock = MagicMock(return_value=MagicMock())
-    SearchCache.collection['123'] = MagicMock()
+    SearchCache.collection['123 - channel'] = MagicMock()
     with patch('src.models.search.Search.from_api', get_mock):
         new_search = SearchCache.add('456', 'channel')
     assert new_search is not None
     assert len(SearchCache.collection.keys()) == 2
-    assert SearchCache.collection.get('456') == new_search
+    assert SearchCache.collection.get('456 - channel') == new_search
