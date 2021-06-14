@@ -1,4 +1,4 @@
-.PHONY: test lint
+.PHONY: test
 
 clean:
 	rm -rf .pytest_cach .coverage
