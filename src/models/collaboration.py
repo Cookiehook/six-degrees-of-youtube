@@ -29,7 +29,7 @@ class Collaboration:
                 "username": self.channel_2.username
             },
             "video": {
-                "channel_id": self.video.video_id,
+                "channel_id": self.video.channel_id,
                 "description": self.video.description,
                 "title": self.video.title,
                 "video_id": self.video.video_id
