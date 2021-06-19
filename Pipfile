@@ -4,8 +4,17 @@ verify_ssl = true
 
 [packages]
 requests = "*"
+flask = "*"
+flask_sqlalchemy = "*"
+psycopg2-binary = "*"
+jsonschema = "*"
+beautifulsoup4 = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
+flake8 = "*"
+responses = "*"
 
 [requires]
 python_version = "3.9"
