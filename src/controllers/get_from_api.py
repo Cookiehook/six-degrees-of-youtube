@@ -1,17 +1,10 @@
-import logging
-from copy import copy
-
 from requests import HTTPError
 
 from src.caches.channel_cache import ChannelCache, PartnersCache
-from src.caches.collaboration_cache import CollaborationCache
 from src.caches.search_cache import SearchCache
 from src.caches.video_cache import VideoCache
 from src.enums import ChannelFilters
 from src.models.video import Video
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 def get_target_channel(target_name: str):
@@ -41,6 +34,11 @@ def get_channel_ids_from_description(video: Video) -> list:
             continue
 
     for url in video.get_collaborator_urls_from_description():
+        channel = ChannelCache.get_from_cache(ChannelFilters.URL, url)
+        if channel:
+            channel_ids.append(channel.id)
+            continue
+
         for result in SearchCache.add(url, 'channel,video'):
             if result.kind == 'youtube#channel':
                 potential_id = result.result_id
@@ -81,45 +79,14 @@ def get_channel_ids_from_title(video: Video) -> list:
         title_words = title.split()
         for idx, word in enumerate(title_words):
             possible_titles.append(' '.join(title_words[:idx + 1]))
-        search_results = SearchCache.add("|".join(possible_titles))
-        possible_titles.reverse()
-        guest = find_channel_by_title(search_results, possible_titles)
-        if guest:
-            channel_ids.append(guest.id)
-        else:
+        try:
+            search_results = SearchCache.add("|".join(possible_titles))
+            possible_titles.reverse()
+            guest = find_channel_by_title(search_results, possible_titles)
+        except HTTPError:
             print(f"ERROR - Could not find channel with title '{title}'")
+        else:
+            if guest:
+                channel_ids.append(guest.id)
 
     return channel_ids
-
-
-def main():
-    get_target_channel('Violet Orlandi')
-    final_iteration = 2
-    iteration = 1
-    while iteration <= final_iteration:
-        logger.debug(f"Starting loop {iteration}")
-        channel_loop = copy(PartnersCache.collection)
-        for host in channel_loop:
-            logger.debug(f"Processing channel {host}")
-            for video in Video.from_playlist(host.uploads_id):
-                VideoCache.collection[video.video_id] = video
-                logger.info(f"Processing video '{video.title}' from '{host.title}'")
-                guest_channels = get_channel_ids_from_description(video)
-                guest_channels.extend(get_channel_ids_from_title(video))
-                if iteration != final_iteration:
-                    for channel_id in guest_channels:
-                        try:
-                            PartnersCache.add(ChannelFilters.ID, channel_id)
-                        except HTTPError as e:
-                            print(f"ERROR whilst processing channel_id '{channel_id}' - {e}")
-                            continue
-                else:
-                    for channel_id in guest_channels:
-                        guest = PartnersCache.get_from_cache(ChannelFilters.ID, channel_id)
-                        if guest:
-                            CollaborationCache.add(host, guest, video)
-
-        iteration += 1
-
-    for collab in CollaborationCache.collection:
-        print(collab)

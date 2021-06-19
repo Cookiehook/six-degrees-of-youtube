@@ -10,4 +10,4 @@ test: Pipfile.lock lint
 	pipenv run pytest --cov=src
 
 Pipfile.lock: Pipfile
-	pipenv update --dev
+	pipenv install --dev
