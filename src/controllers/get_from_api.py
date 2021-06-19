@@ -1,3 +1,7 @@
+import random
+
+import requests
+from bs4 import BeautifulSoup
 from requests import HTTPError
 
 from src.caches.channel_cache import ChannelCache, PartnersCache
@@ -38,18 +42,14 @@ def get_channel_ids_from_description(video: Video) -> list:
         if channel:
             channel_ids.append(channel.id)
             continue
-
-        for result in SearchCache.add(url, 'channel,video'):
-            if result.kind == 'youtube#channel':
-                potential_id = result.result_id
-            else:
-                video = VideoCache.add(result.result_id)
-                potential_id = video.channel_id
-
-            potential_channel = ChannelCache.add(ChannelFilters.ID, potential_id)
-            if potential_channel.url.upper() == url.upper():
-                channel_ids.append(potential_id)
-                break
+        print(f"Making soup from '{url}'")
+        response = requests.get(f'https://www.youtube.com/{url}',
+                                cookies={'CONSENT': 'YES+cb.20210328-17-p0.en-GB+FX+{}'.format(random.randint(100, 999))})
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content.decode(), 'html.parser')
+            channel_ids.append(soup.find('meta', property='og:url')['content'].split("/")[-1])
+        else:
+            print(f"ERROR - Spilled soup with code {response.status_code} - {response.content}")
 
     return channel_ids
 

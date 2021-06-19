@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from src.models.youtube_object import YoutubeObject
 
@@ -13,6 +14,12 @@ class Video(YoutubeObject):
 
     def __repr__(self):
         return self.title
+
+    def __strip_accents(self, text):
+        text = unicodedata.normalize('NFD', text) \
+            .encode('ascii', 'ignore') \
+            .decode("utf-8")
+        return str(text).strip()
 
     @classmethod
     def from_api(cls, video_id):
@@ -56,17 +63,17 @@ class Video(YoutubeObject):
             self.title = self.title.replace(char, '')
 
         if "@" in self.title:
-            return [s.strip() for s in self.title.split('@')[1:]]
+            return [self.__strip_accents(s) for s in self.title.split('@')[1:]]
         return []
 
     def get_collaborator_urls_from_description(self):
-        match_1 = re.findall(r'youtube.com/c/([a-zA-Z0-9_\-]+)', self.description)
-        match_2 = re.findall(r'youtube.com/([a-zA-Z0-9_\-]+\s)', self.description)
-        return [url.strip() for url in match_1 + match_2]
+        match_1 = re.findall(r'youtube.com/c/([\w_\-]+\s)', self.description, re.UNICODE)
+        match_2 = re.findall(r'youtube.com/([\w_\-]+\s)', self.description, re.UNICODE)
+        return [self.__strip_accents(url) for url in match_1 + match_2]
 
     def get_collaborator_users_from_description(self):
-        match = re.findall(r'youtube.com/user/([a-zA-Z0-9_\-]+)', self.description)
-        return [u.strip() for u in match]
+        match = re.findall(r'youtube.com/user/([\w_\-]+)', self.description, re.UNICODE)
+        return [self.__strip_accents(u) for u in match]
 
     def get_collaborator_ids_from_description(self):
         match = re.findall(r'youtube.com/channel/([a-zA-Z0-9_\-]+)', self.description)

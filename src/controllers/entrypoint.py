@@ -10,7 +10,7 @@ from src.enums import ChannelFilters
 from src.models.video import Video
 
 
-def main():
+def entrypoint():
     get_from_api.get_target_channel('Violet Orlandi')
     final_iteration = 2
     iteration = 1
@@ -44,3 +44,5 @@ def main():
 
     for collab in CollaborationCache.collection:
         print(collab)
+
+    return CollaborationCache.collection

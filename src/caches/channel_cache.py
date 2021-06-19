@@ -14,12 +14,12 @@ class ChannelCache:
 
         if identifier_attribute == ChannelFilters.USERNAME:
             for channel in cls.collection:
-                if channel.username == identifier_value:
+                if channel.username and channel.username.lower() == identifier_value.lower():
                     return channel
 
         if identifier_attribute == ChannelFilters.URL:
             for channel in cls.collection:
-                if channel.url == identifier_value:
+                if channel.url and channel.url.lower() == identifier_value.lower():
                     return channel
 
     @classmethod
