@@ -17,7 +17,7 @@ class YoutubeObject:
             filename = f"{endpoint}_{'_'.join([f'{k}-{v}' for k, v in params.items()])}.json".replace("|", "")
             filepath = os.path.join('data', 'api-queries', filename)
             if os.path.exists(filepath):
-                with open(os.path.join("queries", filename), "r") as queryfile:
+                with open(filepath, "r") as queryfile:
                     response = json.loads(queryfile.read())
                     return response.get('items'), response.get('nextPageToken')
 
