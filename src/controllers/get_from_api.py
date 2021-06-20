@@ -38,7 +38,7 @@ def get_channel_ids_from_description(video: Video) -> list:
             continue
 
     for url in video.get_collaborator_urls_from_description():
-        channel = ChannelCache.get_from_cache(ChannelFilters.URL, url)
+        channel = ChannelCache.get_from_cache(ChannelFilters.URL, url) or ChannelCache.get_from_cache(ChannelFilters.USERNAME, url)
         if channel:
             channel_ids.append(channel.id)
             continue
@@ -47,10 +47,19 @@ def get_channel_ids_from_description(video: Video) -> list:
                                 cookies={'CONSENT': 'YES+cb.20210328-17-p0.en-GB+FX+{}'.format(random.randint(100, 999))})
         if response.status_code == 200:
             soup = BeautifulSoup(response.content.decode(), 'html.parser')
-            channel_ids.append(soup.find('meta', property='og:url')['content'].split("/")[-1])
-        else:
-            print(f"ERROR - Spilled soup with code {response.status_code} - {response.content}")
+            if og_url := soup.find('meta', property='og:url'):
+                channel_id = og_url['content'].split("/")[-1]
+                channel_ids.append(channel_id)
+                # Some URLs of the form 'youtube.com/url' are actually usernames,
+                # redirecting to 'youtube.com/user/url' or 'youtube.com/c/<actual_url>'.
+                # This logic ensures that we've stored this properly for future use of the cache
+                if "/user/" in response.url or response.url.split("/")[-1].lower() != url.lower():
+                    ChannelCache.add(ChannelFilters.USERNAME, url)
+                else:
+                    ChannelCache.add(ChannelFilters.ID, channel_id)
+                continue
 
+        print(f"ERROR - Spilled soup with code {response.status_code} - {response.content}")
     return channel_ids
 
 

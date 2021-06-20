@@ -10,8 +10,8 @@ from src.enums import ChannelFilters
 from src.models.video import Video
 
 
-def entrypoint():
-    get_from_api.get_target_channel('Violet Orlandi')
+def entrypoint(channel_name):
+    get_from_api.get_target_channel(channel_name)
     final_iteration = 2
     iteration = 1
     while iteration < final_iteration:
@@ -30,9 +30,15 @@ def entrypoint():
                         continue
         iteration += 1
 
-    for channel in PartnersCache.collection:
-        videos = Video.from_playlist(channel.uploads_id)
-        VideoCache.collection.update({i.video_id: i for i in videos})
+    for channel in PartnersCache.collection[1:]:
+        try:
+            videos = Video.from_playlist(channel.uploads_id)
+            VideoCache.collection.update({i.video_id: i for i in videos})
+        except HTTPError as e:
+            if e.args[0].get('error', {}).get('code') == 404:
+                print(f"ERROR - Could not find uploads playlist for {channel}")
+            else:
+                raise
 
     print("Processing cached videos")
     for video_id, video in VideoCache.collection.items():
