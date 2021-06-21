@@ -4,21 +4,25 @@ from copy import copy
 import requests
 from requests import HTTPError
 
+from src_new.extensions import db
+
 api_keys = os.getenv('YOUTUBE_API_KEYS', '').split(',')
 
 
-class YoutubeObject:
+class YoutubeObject(db.Model):
+    __abstract__ = True
 
     @staticmethod
     def get(endpoint, params):
         print(f"Querying API for '{endpoint}' with parameters '{params}")
         base_url = os.getenv('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3/')
 
-        auth_params = copy(params)  # Make a copy so the key doeesn't end up in logs
+        auth_params = copy(params)  # Make a copy so the key doesn't end up in logs
         auth_params['key'] = api_keys[0]
         response = requests.get(base_url + endpoint, params=auth_params)
         # If we still have multiple keys, try the next one
         if response.status_code == 403 and len(api_keys) > 1:
+            print("API quota limit reached, swapping key")
             api_keys.pop(0)
             return YoutubeObject.get(endpoint, params)
         elif response.status_code == 403:
