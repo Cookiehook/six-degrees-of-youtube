@@ -34,7 +34,6 @@ class Channel(YoutubeObject):
         filters = {
             'id': {'id': identifier_value},
             'forUsername': {'forUsername': identifier_value},
-            'url': {'url': identifier_value},
         }
         return cls.query.filter_by(**filters[identifier_attribute]).first()
 

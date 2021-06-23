@@ -36,7 +36,7 @@ def get_channels_from_title(video: Video) -> set:
     the channel name. eg: "Halocene|Halocene ft." / "Violet|Violet Orlandi" / "Lollia"
     We assume the longest successful match is the correct one.
     """
-    channels = set
+    channels = set()
 
     for title in video.get_collaborators_from_title():
         possible_titles = []

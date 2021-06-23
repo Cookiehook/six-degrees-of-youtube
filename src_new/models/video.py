@@ -14,15 +14,15 @@ class Video(YoutubeObject):
     description = db.Column(db.String, nullable=False)
     published_at = db.Column(db.DateTime, nullable=False)
 
-    def __init__(self, id, channel_id, title, description, published_at):
+    def __init__(self, id, channel_id, title, description, published_at, save=True):
         self.id = id
         self.channel_id = channel_id
         self.title = title
         self.description = description
         self.published_at = published_at
 
-        db.session.add(self)
-        db.session.commit()
+        if save:
+            db.session.add(self)
 
     def __repr__(self):
         return self.title + " - " + self.channel_id
@@ -50,11 +50,13 @@ class Video(YoutubeObject):
         videos, _ = cls.get('videos', params=params)
         assert len(videos) == 1, f'Returned unexpected number of videos: {videos}'
 
+        # Don't cache videos returned from individual lookups, as it breaks the ability to refresh an uploads playlist
         return cls(videos[0]['id'],
                    videos[0]['snippet']['channelId'],
                    videos[0]['snippet']['title'],
                    videos[0]['snippet']['description'],
-                   datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ')
+                   datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
+                   False
                    )
 
     @classmethod
@@ -65,13 +67,22 @@ class Video(YoutubeObject):
             'maxResults': 50
         }
         videos = Video.query.filter_by(channel_id=channel.id).order_by(Video.published_at.desc()).all()
+        ids = [v.id for v in videos]
         latest_video = videos[0] if videos else None
         playlist_content, next_page = cls.get('playlistItems', params)
 
         while True:
             for new_video in playlist_content:
                 if latest_video and latest_video.id == new_video['snippet']['resourceId']['videoId']:
+                    db.session.commit()
                     return videos
+                if new_video['snippet']['resourceId']['videoId'] in ids:
+                    # Items uploaded on the same day aren't in the right order. Eg, videos at 1pm, 2pm, 3pm may come
+                    # back in order 2, 3, 1. This means the 1st video isn't the newest, if the code tries to cache it,
+                    # it would raise an IntegrityError as is already exists.
+                    print(f"ERROR - Tried to cache video {new_video['snippet']['resourceId']['videoId']} twice")
+                    continue
+
                 videos.append(cls(new_video['snippet']['resourceId']['videoId'],
                                   new_video['snippet']['channelId'],
                                   new_video['snippet']['title'],
@@ -79,6 +90,7 @@ class Video(YoutubeObject):
                                   datetime.datetime.strptime(new_video['snippet']['publishedAt'],
                                                              '%Y-%m-%dT%H:%M:%SZ')))
             if next_page is None:
+                db.session.commit()
                 return videos
             params['pageToken'] = next_page
             playlist_content, next_page = cls.get('playlistItems', params)

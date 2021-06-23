@@ -6,7 +6,7 @@ class SearchResult(YoutubeObject):
     result_id = db.Column(db.String, primary_key=True)
     kind = db.Column(db.String)
     title = db.Column(db.String)
-    key = db.Column(db.String)
+    key = db.Column(db.String, primary_key=True)
 
     def __init__(self, kind, result_id, title, key):
         self.kind = kind
