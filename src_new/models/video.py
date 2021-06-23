@@ -98,7 +98,7 @@ class Video(YoutubeObject):
             self.title = self.title.replace(char, '')
 
         if "@" in self.title:
-            return {self.__strip_accents(s) for s in self.title.split('@')[1:]}
+            return {s.strip() for s in self.title.split('@')[1:]}
         return set()
 
     def get_collaborator_urls_from_description(self):

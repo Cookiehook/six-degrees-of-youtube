@@ -3,10 +3,10 @@ from src_new.models.youtube_object import YoutubeObject
 
 
 class SearchResult(YoutubeObject):
-    result_id = db.Column(db.String)
+    result_id = db.Column(db.String, primary_key=True)
     kind = db.Column(db.String)
-    title = db.Column(db.String, primary_key=True)
-    key = db.Column(db.String, primary_key=True)
+    title = db.Column(db.String)
+    key = db.Column(db.String)
 
     def __init__(self, kind, result_id, title, key):
         self.kind = kind
@@ -41,7 +41,7 @@ def from_api(search_term):
         'part': 'snippet',
         'q': search_term,
         'maxResults': 5,
-        'type': 'channels'
+        'type': 'channel'
     }
 
     items, _ = YoutubeObject.get('search', params=params)

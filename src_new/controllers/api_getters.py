@@ -22,7 +22,7 @@ def get_channel_ids_from_description(video: Video) -> set:
         try:
             channel_ids.update([Channel.from_api("id", channel_id).id])
         except HTTPError as e:
-            print(f"ERROR whilst processing channel '{channel_ids}' - {e}")
+            print(f"ERROR whilst processing channel '{channel_id}' - {e}")
             continue
 
     for user in video.get_collaborator_users_from_description():
@@ -77,8 +77,8 @@ def get_channel_ids_from_title(video: Video) -> set:
             try:
                 search_results = search.from_api("|".join(possible_titles))
                 guest = find_channel_by_title(search_results, possible_titles)
-            except HTTPError:
-                print(f"ERROR - Could not find channel with title '{title}'")
+            except HTTPError as e:
+                print(f"ERROR - Could not find channel with title '{title}' - {e}")
 
         if guest:
             channel_ids.update([guest.id])

@@ -20,8 +20,8 @@ def entrypoint(channel_name):
             print(f"Processing channel - {host.title}")
             for video in Video.from_playlist(host.uploads_id):
                 VideoCache.collection[video.video_id] = video
-                guest_channels = get_from_api.get_channel_ids_from_description(video)
-                guest_channels.extend(get_from_api.get_channel_ids_from_title(video))
+                guest_channels = get_from_api.get_channels_from_description(video)
+                guest_channels.extend(get_from_api.get_channels_from_title(video))
                 for channel_id in guest_channels:
                     try:
                         PartnersCache.add(ChannelFilters.ID, channel_id)
