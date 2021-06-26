@@ -9,6 +9,7 @@ from src.views.test import test_bp
 def create_app():
     app = Flask(__name__)
     app.register_blueprint(test_bp)
+    app.app_context().push()
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:bob@127.0.0.1:5432')
@@ -18,6 +19,7 @@ def create_app():
 
     return app
 
+app = create_app()
 
 if __name__ == '__main__':
-    create_app().run('0.0.0.0', 5000)
+    app.run('0.0.0.0', 5000)

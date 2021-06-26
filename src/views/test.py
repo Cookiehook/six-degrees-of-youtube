@@ -7,8 +7,5 @@ test_bp = Blueprint('test', __name__)
 
 @test_bp.route('/')
 def test_method():
-    # entrypoint('Halocene')
-    # entrypoint('Lauren Babic')
-    entrypoint('Violet Orlandi')
-    # entrypoint('Frog Leap Studios')
+    entrypoint('Lauren Babic')
     return ''

@@ -1,16 +1,39 @@
+from sqlalchemy import or_
+from sqlalchemy.orm import relationship
+
+from src.extensions import db
 from src.models.channel import Channel
 from src.models.video import Video
+from src.models.youtube_object import YoutubeObject
 
 
-class Collaboration:
+class Collaboration(YoutubeObject):
+    id = db.Column(db.Integer, primary_key=True)
+    channel_1_id = db.Column(db.String, db.ForeignKey('channel.id'))
+    channel_2_id = db.Column(db.String, db.ForeignKey('channel.id'))
+    video_id = db.Column(db.String, db.ForeignKey('video.id'))
+    channel_1 = relationship("Channel", foreign_keys=[channel_1_id])
+    channel_2 = relationship("Channel", foreign_keys=[channel_2_id])
+    video = relationship("Video", backref="collaboration")
 
     def __init__(self, channel_1: Channel, channel_2: Channel, video: Video):
         self.channel_1 = channel_1
         self.channel_2 = channel_2
         self.video = video
 
+        self.channel_1.id = self.channel_1.id
+        self.channel_2.id = self.channel_2.id
+        self.video.id = self.video.id
+
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
+
+    @staticmethod
+    def get_for_channel(channel_id):
+        return Collaboration.query.filter(or_(Collaboration.channel_1_id == channel_id, Collaboration.channel_1_id == channel_id)).all()
 
     def to_json(self):
         return {
@@ -36,16 +59,3 @@ class Collaboration:
                 "published_at": self.video.published_at
             }
         }
-
-
-class CollaborationCache:
-    collection = []
-
-    @classmethod
-    def add(cls, channel_1: Channel, channel_2: Channel, video: Video):
-        if channel_1.id == channel_2.id:
-            return  # Happens when an artist references another of their videos in the description
-        for collab in cls.collection:
-            if ({channel_1.id, channel_2.id} == {collab.channel_1.id, collab.channel_2.id}) and video.id == collab.video.id:
-                return  # Already recorded this video and pairing, don't repeat
-        cls.collection.append(Collaboration(channel_1, channel_2, video))
