@@ -33,7 +33,7 @@ class Collaboration(YoutubeObject):
 
     @staticmethod
     def get_for_channel(channel_id):
-        return Collaboration.query.filter(or_(Collaboration.channel_1_id == channel_id, Collaboration.channel_1_id == channel_id)).all()
+        return Collaboration.query.filter(or_(Collaboration.channel_1_id == channel_id, Collaboration.channel_2_id == channel_id)).all()
 
     def to_json(self):
         return {

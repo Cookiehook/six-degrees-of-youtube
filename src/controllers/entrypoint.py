@@ -11,6 +11,7 @@ from src.models.video import Video
 
 def entrypoint(channel_name):
     target_channel = api_getters.get_target_channel(channel_name)
+    target_channel_id = target_channel.id
     guest_channels = set()
     for video in Video.from_uploads(target_channel):
         guest_channels.update(api_getters.get_channel_ids_from_description(video))
@@ -26,6 +27,10 @@ def entrypoint(channel_name):
 
     for process in processes:
         process.join()
+
+    collabs = Collaboration.get_for_channel(target_channel_id)
+    for c in collabs:
+        print(c)
 
 
 def chunks(lst, n):
