@@ -1,9 +1,9 @@
 from requests import HTTPError
 
-from src_new.controllers import api_getters, cache_getters
-from src_new.models.channel import Channel
-from src_new.models.collaboration import CollaborationCache
-from src_new.models.video import Video
+from src.controllers import api_getters, cache_getters
+from src.models.channel import Channel
+from src.models.collaboration import CollaborationCache
+from src.models.video import Video
 
 
 def entrypoint(channel_name):

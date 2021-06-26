@@ -2,9 +2,9 @@ import datetime
 import re
 import unicodedata
 
-from src_new.extensions import db
-from src_new.models.channel import Channel
-from src_new.models.youtube_object import YoutubeObject
+from src.extensions import db
+from src.models.channel import Channel
+from src.models.youtube_object import YoutubeObject
 
 
 class Video(YoutubeObject):

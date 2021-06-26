@@ -2,8 +2,8 @@ import os
 
 from flask import Flask
 
-from src_new.extensions import db
-from src_new.views.test import test_bp
+from src.extensions import db
+from src.views.test import test_bp
 
 
 def create_app():

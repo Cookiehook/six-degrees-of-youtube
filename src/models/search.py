@@ -1,5 +1,5 @@
-from src_new.extensions import db
-from src_new.models.youtube_object import YoutubeObject
+from src.extensions import db
+from src.models.youtube_object import YoutubeObject
 
 
 class SearchResult(YoutubeObject):

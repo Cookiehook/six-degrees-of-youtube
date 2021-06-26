@@ -4,7 +4,7 @@ from copy import copy
 import requests
 from requests import HTTPError
 
-from src_new.extensions import db
+from src.extensions import db
 
 api_keys = os.getenv('YOUTUBE_API_KEYS', '').split(',')
 

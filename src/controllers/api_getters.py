@@ -1,9 +1,9 @@
 from requests import HTTPError
 from sqlalchemy import or_
 
-from src_new.models import search
-from src_new.models.channel import Channel
-from src_new.models.video import Video
+from src.models import search
+from src.models.channel import Channel
+from src.models.video import Video
 
 
 def get_target_channel(target_name: str):

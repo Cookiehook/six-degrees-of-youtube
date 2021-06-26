@@ -3,13 +3,13 @@ import random
 import requests
 from bs4 import BeautifulSoup
 
-from src_new.extensions import db
-from src_new.models.youtube_object import YoutubeObject
+from src.extensions import db
+from src.models.youtube_object import YoutubeObject
 
 
 class Channel(YoutubeObject):
     id = db.Column(db.String, primary_key=True)
-    title = db.Column(db.String, unique=True, nullable=False)
+    title = db.Column(db.String, nullable=False)
     uploads_id = db.Column(db.String, unique=True, nullable=False)
     thumbnail = db.Column(db.String, unique=True, nullable=False)
     url = db.Column(db.String)
