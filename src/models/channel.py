@@ -78,7 +78,7 @@ class Channel(YoutubeObject):
                 # Some URLs of the form 'youtube.com/url' are actually usernames,
                 # redirecting to 'youtube.com/user/url' or 'youtube.com/c/<actual_url>'.
                 # This logic ensures that we've stored this properly for future use of the cache
-                if "/user/" in response.url or response.url.split("/")[-1].lower() != url.lower():
+                if "/user/" in response.url:
                     return cls.from_api("forUsername", response.url.split("/")[-1].lower())
                 else:
                     return cls.from_api("id", og_url['content'].split("/")[-1])
