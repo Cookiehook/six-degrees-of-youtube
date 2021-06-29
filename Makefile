@@ -7,3 +7,5 @@ update:
 	pipenv check
 	pipenv graph
 
+test:
+	pipenv run pytest --cov src
