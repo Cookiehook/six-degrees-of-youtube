@@ -29,7 +29,7 @@ class Video(YoutubeObject, db.Model):
         return self.title + " - " + self.channel_id
 
     @classmethod
-    def from_id(cls, id: str, cache_only:bool = False):
+    def from_id(cls, id: str, cache_only: bool = False):
         if cached := cls.query.filter_by(id=id).first():
             return cached
         if cache_only:
@@ -50,7 +50,7 @@ class Video(YoutubeObject, db.Model):
 
     @classmethod
     def from_uploads(cls, channel):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_titles_from_title(self):
         illegal_characters = ['(', ')', ',', '@ ']
@@ -94,4 +94,3 @@ class Video(YoutubeObject, db.Model):
         for link in bitly_links:
             resp = requests.get(link)
             self.description += f" {resp.url} "
-

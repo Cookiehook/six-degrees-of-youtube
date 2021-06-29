@@ -106,7 +106,7 @@ class VideoTest(TestCase):
     def test_no_urls_from_description(self):
         description = """
         Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy! 
+        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
         """
         self.default_video.description = description
         urls = self.default_video.get_urls_from_description()
@@ -124,7 +124,7 @@ class VideoTest(TestCase):
     def test_no_users_from_description(self):
         description = """
         Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy! 
+        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
         """
         self.default_video.description = description
         urls = self.default_video.get_users_from_description()
@@ -142,7 +142,7 @@ class VideoTest(TestCase):
     def test_no_channel_ids_from_description(self):
         description = """
         Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy! 
+        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
         """
         self.default_video.description = description
         urls = self.default_video.get_channel_ids_from_description()
@@ -160,7 +160,7 @@ class VideoTest(TestCase):
     def test_no_video_ids_from_description(self):
         description = """
         Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy! 
+        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
         """
         self.default_video.description = description
         urls = self.default_video.get_video_ids_from_description()
@@ -180,13 +180,14 @@ class VideoTest(TestCase):
         with responses.RequestsMock(response_callback=response_callback) as m:
             m.add(responses.GET, 'http://bit.ly/2usJ3lq')
             self.default_video.resolve_bitly_links()
-            assert self.default_video.description.endswith(' https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890 ')
+            assert self.default_video.description.endswith(
+                ' https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890 ')
 
     @patch('src.models.video.requests')
     def test_no_bitly_links(self, requests):
         description = """
         Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy! 
+        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
         """
         self.default_video.description = description
         self.default_video.resolve_bitly_links()

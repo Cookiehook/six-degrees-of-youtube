@@ -13,6 +13,7 @@ requests = "*"  # Make HTTPS calls out to the Youtube API
 pytest = "*"  # Unit test framework
 pytest-cov = "*"  # Unit test coverage calculator
 responses = "*"  # Stub HTTP responses out to Youtube API
+flake8 = "*"  # Code quality analysis
 
 [requires]
 python_version = "3.9"

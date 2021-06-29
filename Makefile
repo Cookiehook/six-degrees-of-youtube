@@ -1,5 +1,5 @@
 clean:
-	rm -r .pytest_cache .coverage
+	rm -rf .pytest_cache .coverage
 
 install:
 	pipenv install --dev --ignore-pipfile
@@ -10,4 +10,5 @@ update:
 	pipenv graph
 
 test: clean
+	pipenv run flake8
 	pipenv run pytest --cov src --cov-report term-missing
