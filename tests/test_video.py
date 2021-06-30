@@ -1,29 +1,19 @@
 import datetime
-from unittest import TestCase
 from unittest.mock import patch, call
 
 import responses
-from flask import Flask
 
-from src import extensions
 from src.models.video import Video
+from tests.base_testcase import YoutubeTestCase
 
 
-class VideoTest(TestCase):
+class VideoTest(YoutubeTestCase):
 
     def setUp(self):
-        self.app = Flask(__name__)
-        extensions.db.init_app(self.app)
-        self.app.app_context().push()  # Required to allow SQLAlchemy extension to load correctly
-        with self.app.app_context():
-            extensions.db.create_all()
+        super(VideoTest, self).setUp()
         self.published_timestamp = datetime.datetime(1970, 1, 1)
         self.default_video = Video('default_id', 'default_channel_id', 'default_title',
                                    'default_description', self.published_timestamp)
-
-    def tearDown(self):
-        with self.app.app_context():
-            extensions.db.drop_all()
 
     @patch('src.models.video.db')
     def test_video_saved_default(self, db):
@@ -71,7 +61,7 @@ class VideoTest(TestCase):
         assert lookup.title == api_response[0]['snippet']['title']
         assert lookup.description == api_response[0]['snippet']['description']
         assert lookup.published_at == datetime.datetime(2020, 1, 1, 6, 30, 45)
-        assert patch_get.call_args == call('videos', params={'part': 'snippet', 'id': 'unknown_id'})
+        assert patch_get.call_args == call('videos', {'part': 'snippet', 'id': 'unknown_id'})
         assert db.session.add.call_args is None
 
     def test_unknown_id_from_api_multiple_videos(self):

@@ -24,6 +24,8 @@ class Video(YoutubeObject, db.Model):
 
         if save:
             db.session.add(self)
+        # We do not commit after every video, as this slows down parsing of playlists
+        # Instead, the from_channel method handles commits
 
     def __repr__(self):
         return self.title + " - " + self.channel_id
@@ -36,7 +38,7 @@ class Video(YoutubeObject, db.Model):
             return
 
         params = {'part': 'snippet', 'id': id}
-        videos, _ = cls.get('videos', params=params)
+        videos, _ = cls.get('videos', params)
         assert len(videos) == 1, f'Returned unexpected number of videos: {videos}'
 
         # Don't cache videos returned from individual lookups, as it breaks the ability to refresh an uploads playlist
@@ -49,7 +51,7 @@ class Video(YoutubeObject, db.Model):
                    )
 
     @classmethod
-    def from_uploads(cls, channel):
+    def from_channel(cls, channel):
         raise NotImplementedError
 
     def get_titles_from_title(self):
