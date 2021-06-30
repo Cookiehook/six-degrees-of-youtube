@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
 
 import responses
 
@@ -182,3 +182,52 @@ class VideoTest(YoutubeTestCase):
         self.default_video.description = description
         self.default_video.resolve_bitly_links()
         assert requests.call_count == 0
+
+    @responses.activate
+    def test_get_from_uploads_new(self):
+        def side_effect(endpoint, params):
+            videos = []
+            for i in range(11):
+                videos.append({
+                    "snippet": {
+                        "resourceId": {"videoId": f"id_{i}"},
+                        "channelId": f"channel_id_{i}",
+                        "title": f"title_{i}",
+                        "description": f"description_{i}",
+                        "publishedAt": "2020-01-01T06:30:45Z",
+                    }})
+            if 'pageToken' not in params:
+                return videos[0:4], 'page2'
+            elif params.get('pageToken') == 'page2':
+                return videos[4:8], 'page3'
+            elif params.get('pageToken') == 'page3':
+                return videos[8:12], None
+
+        channel = MagicMock(id='1', uploads_id='abc123')
+        with patch('src.models.video.Video.get', side_effect=side_effect) as get_patch:
+            uploads = Video.from_channel(channel)
+            assert get_patch.call_count == 3
+            assert len(uploads) == 11
+
+    @responses.activate
+    @patch('src.models.video.Video.get')
+    @patch('src.models.video.logger')
+    def test_get_from_uploads_update_with_clash(self, logger_patch, get_patch):
+        videos = []
+        for i in range(3):
+            videos.append({
+                "snippet": {
+                    "resourceId": {"videoId": f"id_{i}"},
+                    "channelId": f"channel_id_{i}",
+                    "title": f"title_{i}",
+                    "description": f"description_{i}",
+                    "publishedAt": f"2020-01-01T06:30:0{i}Z",
+                }})
+        Video('id_1', '1', 'title-1', 'description', datetime.datetime.now())
+        Video('id_2', '1', 'title-2', 'description', datetime.datetime.now() + datetime.timedelta(hours=6))
+        channel = MagicMock(id='1', uploads_id='abc123')
+        get_patch.return_value = videos, None
+        uploads = Video.from_channel(channel)
+        assert get_patch.call_count == 1
+        assert logger_patch.warning.call_args_list[0] == call('Tried to cache video id_1 when it already exists')
+        assert len(uploads) == 3

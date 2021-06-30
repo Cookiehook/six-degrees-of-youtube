@@ -1,10 +1,14 @@
 import datetime
+import logging
 import re
 
 import requests
 
 from src.extensions import db
+from src.models.channel import Channel
 from src.models.youtube_object import YoutubeObject
+
+logger = logging.getLogger()
 
 
 class Video(YoutubeObject, db.Model):
@@ -13,6 +17,7 @@ class Video(YoutubeObject, db.Model):
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
     published_at = db.Column(db.DateTime, nullable=False)
+    processed = db.Column(db.Boolean, nullable=False)
 
     def __init__(self, id: str, channel_id: str, title: str, description: str,
                  published_at: datetime.datetime, save: bool = True):
@@ -21,6 +26,7 @@ class Video(YoutubeObject, db.Model):
         self.title = title
         self.description = description
         self.published_at = published_at
+        self.processed = False
 
         if save:
             db.session.add(self)
@@ -51,8 +57,48 @@ class Video(YoutubeObject, db.Model):
                    )
 
     @classmethod
-    def from_channel(cls, channel):
-        raise NotImplementedError
+    def from_channel(cls, channel: Channel):
+        """
+        Queries the Youtube API and retrieves a list of videos uploaded by that Channel.
+        If the channel has previously been cached, then only newer unprocessed videos are returned.
+
+        :param channel: Channel to retrieve uploads for
+        :return: list of unprocessed videos
+        """
+        params = {
+            'part': 'snippet',
+            'playlistId': channel.uploads_id,
+            'maxResults': 50
+        }
+        cached_videos = cls.query.filter_by(channel_id=channel.id).order_by(cls.published_at.desc()).all()
+        unprocessed_videos = cls.query.filter_by(channel_id=channel.id, processed=False).order_by(cls.published_at.desc()).all()
+        ids = [v.id for v in cached_videos]
+        latest_video = cached_videos[0] if cached_videos else None
+        playlist_content, next_page = cls.get('playlistItems', params)
+
+        while True:
+            for new_video in playlist_content:
+                if latest_video and latest_video.id == new_video['snippet']['resourceId']['videoId']:
+                    db.session.commit()
+                    return unprocessed_videos
+                if new_video['snippet']['resourceId']['videoId'] in ids:
+                    # Items uploaded on the same day aren't in the right order. Eg, videos at 1pm, 2pm, 3pm may come
+                    # back in order 2, 3, 1. This means the 1st video isn't the newest, if the code tries to cache it,
+                    # it would raise an IntegrityError as is already exists.
+                    logger.warning(f"Tried to cache video {new_video['snippet']['resourceId']['videoId']} when it already exists")
+                    continue
+
+                unprocessed_videos.append(cls(new_video['snippet']['resourceId']['videoId'],
+                                              new_video['snippet']['channelId'],
+                                              new_video['snippet']['title'],
+                                              new_video['snippet']['description'],
+                                              datetime.datetime.strptime(new_video['snippet']['publishedAt'],
+                                                                         '%Y-%m-%dT%H:%M:%SZ')))
+            if next_page is None:
+                db.session.commit()
+                return unprocessed_videos
+            params['pageToken'] = next_page
+            playlist_content, next_page = cls.get('playlistItems', params)
 
     def get_titles_from_title(self):
         illegal_characters = ['(', ')', ',', '@ ']
