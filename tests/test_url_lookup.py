@@ -27,12 +27,12 @@ class UrlLookupTest(YoutubeTestCase):
     def test_repr(self):
         assert self.default_lookup.__repr__() == 'default_original - default_lookup'
 
-    def test_get_success(self):
-        cached = UrlLookup.get('default_original')
-        assert cached is self.default_lookup
+    def test_get_resolved_success(self):
+        cached = UrlLookup.get_resolved('default_original')
+        assert cached is self.default_lookup.resolved
 
-    def test_get_fail(self):
-        cached = UrlLookup.get('unknown')
+    def test_get_resolved_fail(self):
+        cached = UrlLookup.get_resolved('unknown')
         assert cached is None
 
     def test_is_username_true(self):

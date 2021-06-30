@@ -8,6 +8,7 @@ flask = "*"  # Web application framework
 flask_sqlalchemy = "*"  # DB interaction and ORM
 psycopg2-binary = "*"  # Driver for Postgres DB
 requests = "*"  # Make HTTPS calls out to the Youtube API
+beautifulsoup4 = "*"  # HTML parser for retrieving URLs
 
 [dev-packages]
 pytest = "*"  # Unit test framework
