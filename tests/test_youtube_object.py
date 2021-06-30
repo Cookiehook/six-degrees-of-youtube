@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import patch, call
 
 import responses
 from requests import HTTPError
@@ -15,7 +16,8 @@ class YoutubeObjectTest(TestCase):
     ]
 
     @responses.activate
-    def test_successful_call_without_pagination(self):
+    @patch('src.models.youtube_object.logger')
+    def test_successful_call_without_pagination(self, logger):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={'items': self.response_items},
@@ -24,6 +26,7 @@ class YoutubeObjectTest(TestCase):
         items, next_page = YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert items == self.response_items
         assert next_page is None
+        assert logger.debug.call_args_list[0] == call("Querying API with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}")
 
     @responses.activate
     def test_successful_call_with_pagination(self):
@@ -40,7 +43,8 @@ class YoutubeObjectTest(TestCase):
         assert next_page == 'mock-token'
 
     @responses.activate
-    def test_failed_authentication_without_recovery(self):
+    @patch('src.models.youtube_object.logger')
+    def test_failed_authentication_without_recovery(self, logger):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"err": "mock-authentication-error"},
@@ -49,9 +53,11 @@ class YoutubeObjectTest(TestCase):
         with self.assertRaises(RuntimeError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == {"err": "mock-authentication-error"}
+        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")
 
     @responses.activate
-    def test_failed_authentication_with_recovery(self):
+    @patch('src.models.youtube_object.logger')
+    def test_failed_authentication_with_recovery(self, logger):
         youtube_object.api_keys = ['KeyOne', 'KeyTwo']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint?mock_attribute=mock_value&key=KeyOne',
                       match_querystring=True,
@@ -64,9 +70,11 @@ class YoutubeObjectTest(TestCase):
 
         items, _ = YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert items == self.response_items
+        assert logger.warning.call_args_list[0] == call("API quota limit reached, swapping key")
 
     @responses.activate
-    def test_resource_not_found(self):
+    @patch('src.models.youtube_object.logger')
+    def test_resource_not_found(self, logger):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"err": "mock-not-found-error"},
@@ -75,9 +83,11 @@ class YoutubeObjectTest(TestCase):
         with self.assertRaises(HTTPError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == {"err": "mock-not-found-error"}
+        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")
 
     @responses.activate
-    def test_empty_items_response(self):
+    @patch('src.models.youtube_object.logger')
+    def test_empty_items_response(self, logger):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"items": []},
@@ -86,3 +96,4 @@ class YoutubeObjectTest(TestCase):
         with self.assertRaises(HTTPError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == 'API responded with no items'
+        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")

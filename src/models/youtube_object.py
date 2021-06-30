@@ -23,7 +23,7 @@ class YoutubeObject:
         :raises: RuntimeError if an unrecoverable authentication error occurs
         """
 
-        logger.info(f"Querying API for '{endpoint}' with parameters '{params}")
+        logger.debug(f"Querying API with: '{endpoint}' - '{params}")
         base_url = os.getenv('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3/')
 
         auth_params = copy(params)  # Make a copy so the key doesn't end up in logs
@@ -32,15 +32,20 @@ class YoutubeObject:
 
         # If we still have multiple keys, try the next one
         if response.status_code == 403 and len(api_keys) > 1:
-            print("API quota limit reached, swapping key")
+            logger.warning("API quota limit reached, swapping key")
             api_keys.pop(0)
             return YoutubeObject.get(endpoint, params)
+
         # Unrecoverable errors. Raised for calling methods to handle
-        elif response.status_code == 403:
+        message = f"Failed API call with: '{endpoint}' - '{params}'"
+        if response.status_code == 403:
+            logger.error(message)
             raise RuntimeError(response.json())
         elif response.status_code < 200 or response.status_code >= 400:
+            logger.error(message)
             raise HTTPError(response.json())
         if 'items' not in response.json() or len(response.json()['items']) == 0:
+            logger.error(message)
             raise HTTPError('API responded with no items')
 
         return response.json().get('items'), response.json().get('nextPageToken')
