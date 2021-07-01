@@ -4,13 +4,13 @@ import responses
 from requests import HTTPError
 
 from src.models.channel import Channel
-from tests.base_testcase import YoutubeTestCase
+from tests.base_testcase import TestYoutube
 
 
-class ChannelTest(YoutubeTestCase):
+class TestChannel(TestYoutube):
 
     def setUp(self):
-        super(ChannelTest, self).setUp()
+        super(TestChannel, self).setUp()
         self.default_channel = Channel('default_id', 'default_title', 'default_uploads_id',
                                        'default_thumbnail_url', 'default_url', 'default_username')
         self.api_response = [{

@@ -4,13 +4,13 @@ from unittest.mock import patch, call, MagicMock
 import responses
 
 from src.models.video import Video
-from tests.base_testcase import YoutubeTestCase
+from tests.base_testcase import TestYoutube
 
 
-class VideoTest(YoutubeTestCase):
+class TestVideo(TestYoutube):
 
     def setUp(self):
-        super(VideoTest, self).setUp()
+        super(TestVideo, self).setUp()
         self.published_timestamp = datetime.datetime(1970, 1, 1)
         self.default_video = Video('default_id', 'default_channel_id', 'default_title',
                                    'default_description', self.published_timestamp)

@@ -5,7 +5,7 @@ from flask import Flask
 from src import extensions
 
 
-class YoutubeTestCase(TestCase):
+class TestYoutube(TestCase):
 
     def setUp(self):
         self.app = Flask(__name__)

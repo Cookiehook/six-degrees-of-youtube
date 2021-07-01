@@ -8,7 +8,7 @@ from src.models import youtube_object
 from src.models.youtube_object import YoutubeObject
 
 
-class YoutubeObjectTest(TestCase):
+class TestYoutubeObject(TestCase):
     response_items = [
         {"name": "mock-name_1"},
         {"name": "mock-name_2"},

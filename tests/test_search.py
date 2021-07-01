@@ -1,10 +1,10 @@
 from unittest.mock import patch, call
 
 from src.models.search import SearchResult
-from tests.base_testcase import YoutubeTestCase
+from tests.base_testcase import TestYoutube
 
 
-class SearchTest(YoutubeTestCase):
+class TestSearch(TestYoutube):
 
     def test_init(self):
         result = SearchResult('id', 'title', 'search term')

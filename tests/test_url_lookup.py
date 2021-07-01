@@ -1,13 +1,13 @@
 from unittest.mock import patch, call
 
 from src.models.url_lookup import UrlLookup
-from tests.base_testcase import YoutubeTestCase
+from tests.base_testcase import TestYoutube
 
 
-class UrlLookupTest(YoutubeTestCase):
+class TestUrlLookup(TestYoutube):
 
     def setUp(self):
-        super(UrlLookupTest, self).setUp()
+        super(TestUrlLookup, self).setUp()
         self.default_lookup = UrlLookup('default_original', 'default_lookup')
 
     @patch('src.models.url_lookup.db')

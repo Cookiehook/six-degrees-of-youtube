@@ -3,10 +3,10 @@ import datetime
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
 from src.models.video import Video
-from tests.base_testcase import YoutubeTestCase
+from tests.base_testcase import TestYoutube
 
 
-class ChannelTest(YoutubeTestCase):
+class TestCollaboration(TestYoutube):
 
     def test_init(self):
         channel_1 = Channel('id_1', 'title_1', 'uploads_1', 'thumbnail_1', '')
