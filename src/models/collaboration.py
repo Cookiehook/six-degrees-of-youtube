@@ -1,0 +1,35 @@
+from sqlalchemy import and_
+from sqlalchemy.orm import relationship
+
+from src.extensions import db
+from src.models.channel import Channel
+from src.models.video import Video
+
+
+class Collaboration(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    channel_1_id = db.Column(db.String, db.ForeignKey('channel.id'))
+    channel_2_id = db.Column(db.String, db.ForeignKey('channel.id'))
+    video_id = db.Column(db.String, db.ForeignKey('video.id'))
+    channel_1 = relationship("Channel", foreign_keys=[channel_1_id])
+    channel_2 = relationship("Channel", foreign_keys=[channel_2_id])
+    video = relationship("Video", backref="collaboration")
+
+    def __init__(self, channel_1: Channel, channel_2: Channel, video: Video):
+        self.channel_1 = channel_1
+        self.channel_2 = channel_2
+        self.video = video
+
+        self.channel_1.id = self.channel_1.id
+        self.channel_2.id = self.channel_2.id
+        self.video.id = self.video.id
+
+        db.session.add(self)
+        db.session.commit()
+
+    def __repr__(self):
+        return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
+
+    @staticmethod
+    def get_for_channel_ids(channel_ids):
+        return Collaboration.query.filter(and_(Collaboration.channel_1_id.in_(channel_ids), Collaboration.channel_2_id.in_(channel_ids))).all()
