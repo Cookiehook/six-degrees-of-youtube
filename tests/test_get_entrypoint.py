@@ -159,5 +159,22 @@ class TestGetEntrypoint(TestYoutube):
         assert call('Violet Orlandi|Violet') in patch_search.from_term.call_args_list
         assert patch_logger.error.call_count == 3
         assert call("Processing channel name 'Lollia' from title of 'Test Video' failed") in patch_logger.error.call_args_list
-        assert call("Processing search term '['h20Delir']' for video 'Test Video' - 'Test Error") in patch_logger.error.call_args_list
+        assert call("Processing search term '['h20Delir']' for video 'Test Video' - 'Test Error'") in patch_logger.error.call_args_list
         assert call("Processing channel name 'h20Delir' from title of 'Test Video' failed") in patch_logger.error.call_args_list
+
+    @patch('src.controllers.get_collaborations.logger')
+    @patch('src.controllers.get_collaborations.Video')
+    def test_get_uploads_for_channels(self, patch_video, patch_logger):
+        def side_effect(channel):
+            if channel.id in ['id1', 'id3']:
+                return [MagicMock(), MagicMock()]
+            raise HTTPError("TestError")
+
+        patch_video.from_channel.side_effect = side_effect
+        channels = {Channel('id1', 'title1', 'uploads1', 'thumbnail1', ''),
+                    Channel('id2', 'title2', 'uploads2', 'thumbnail2', ''),
+                    Channel('id3', 'title3', 'uploads3', 'thumbnail3', '')}
+        videos = get_collaborations.get_uploads_for_channels(channels)
+        assert len(videos) == 4
+        assert patch_logger.error.call_count == 1
+        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title2' - 'TestError'")

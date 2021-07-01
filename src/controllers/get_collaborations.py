@@ -31,7 +31,7 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         guest_channels.update(get_channels_from_description(video))
         guest_channels.update(get_channels_from_title(video))
 
-    # Get list of videos uploaded by the given channel and all referenced channels
+    videos = get_uploads_for_channels(guest_channels)
 
     # Split list of videos into similarly sized groups for parallel processing
 
@@ -137,7 +137,7 @@ def get_channels_from_title(video: Video) -> set:
                 search_results = SearchResult.from_term("|".join(possible_titles))
                 guest = find_channel_by_title(search_results, possible_titles)
             except HTTPError as err:
-                logger.error(f"Processing search term '{possible_titles}' for video '{video}' - '{err}")
+                logger.error(f"Processing search term '{possible_titles}' for video '{video}' - '{err}'")
 
         if guest:
             channels.update([guest])
@@ -145,3 +145,20 @@ def get_channels_from_title(video: Video) -> set:
             logger.error(f"Processing channel name '{title}' from title of '{video}' failed")
 
     return channels
+
+
+def get_uploads_for_channels(channels: set) -> list:
+    """
+    Retrieve list of all videos uploaded by a list of channels
+
+    :param channels: list of Channel objects
+    :return: list of Video objects for all channels
+    """
+    videos = []
+    for channel in channels:
+        try:
+            videos.extend([v.id for v in Video.from_channel(channel)])
+        except HTTPError as e:
+            logger.error(f"Processing uploads for channel '{channel}' - '{e}'")
+
+    return videos
