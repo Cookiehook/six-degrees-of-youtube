@@ -1,0 +1,47 @@
+<!--Generated using tutorial https://www.anychart.com/blog/2020/07/22/network-graph-javascript/-->
+<!--Configuration: https://docs.anychart.com/Basic_Charts/Network_Graph-->
+<!--Other sample charts: https://gojs.net/latest/samples/index.html-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Six Degrees of Youtube</title>
+    <style>
+      html, body, #container {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+    </style>
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-core.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-graph.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-data-adapter.min.js"></script>
+
+    <script>
+        anychart.onDocumentReady(function () {
+            var data = {{ collab_data|tojson }};
+            var chart = anychart.graph(data);
+
+            // access nodes
+            var nodes = chart.nodes();
+
+            // set the size of nodes
+            nodes.normal().height({{ node_size }});
+            nodes.hovered().height({{ node_size }});
+            nodes.selected().height({{ node_size }} * 2);
+
+            // set the stroke of nodes
+            nodes.normal().stroke(null);
+            nodes.hovered().stroke("#333333", 3);
+            nodes.selected().stroke("#333333", 3);
+
+            chart.title("Graph of Wrath");
+            chart.container("container").draw();
+        })
+    </script>
+</head>
+<body>
+<div id="container"></div>
+</body>
+</html>

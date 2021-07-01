@@ -34,6 +34,24 @@ class Collaboration(db.Model):
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
+    def __eq__(self, other):
+        if {self.channel_1, self.channel_2} == {other.channel_1, other.channel_2}:
+            return True
+        return False
+
+    def __hash__(self):
+        return hash((self.channel_1_id, self.channel_2_id))
+
+    @classmethod
+    def get_collaborators(cls, target_channel: Channel) -> set:
+        """
+        Get all channels that have appeared in the given channel's videos
+
+        :param target_channel: Channel instance for the target channel
+        :return: list of Channel instances for collaborating partners
+        """
+        return set([c.channel_2 for c in cls.query.filter_by(channel_1_id=target_channel.id)] + [target_channel])
+
     @classmethod
     def for_target_channel(cls, target_channel) -> list:
         """
@@ -42,5 +60,5 @@ class Collaboration(db.Model):
         :param target_channel: Channel object for target channel
         :return: list of matching Collaboration objects.
         """
-        partners = [c.channel_2_id for c in Collaboration.query.filter_by(channel_1_id=target_channel.id)] + [target_channel.id]
+        partners = [c.id for c in cls.get_collaborators(target_channel)]
         return cls.query.filter(and_(cls.channel_1_id.in_(partners), cls.channel_2_id.in_(partners))).all()
