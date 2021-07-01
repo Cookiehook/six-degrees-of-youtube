@@ -35,7 +35,7 @@ class Video(YoutubeObject, db.Model):
         # Instead, the from_channel method handles commits
 
     def __repr__(self):
-        return self.title + " - " + self.channel_id
+        return self.title + " - " + self.id
 
     @classmethod
     def from_id(cls, id: str, cache_only: bool = False):

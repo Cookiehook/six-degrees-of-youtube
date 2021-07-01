@@ -31,7 +31,7 @@ class TestVideo(TestYoutube):
         assert db.method_calls == []
 
     def test_repr(self):
-        assert self.default_video.__repr__() == 'default_title - default_channel_id'
+        assert self.default_video.__repr__() == 'default_title - default_id'
 
     def test_known_id_from_cache(self):
         cached = Video.from_id('default_id', cache_only=True)
