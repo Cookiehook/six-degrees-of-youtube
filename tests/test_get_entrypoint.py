@@ -103,7 +103,61 @@ class TestGetEntrypoint(TestYoutube):
         assert patch_channel.from_url.call_count == 2
 
         assert patch_logger.call_count == 4
-        assert call("Failed processing channel ID '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
-        assert call("Failed processing username '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
-        assert call("Failed processing video ID '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
+        assert call(
+            "Failed processing channel ID '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
+        assert call(
+            "Failed processing username '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
+        assert call(
+            "Failed processing video ID '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
         assert call("Failed processing url '2' from video 'Test Video' - Test Error") in patch_logger.call_args_list
+
+    @patch('src.controllers.get_collaborations.logger')
+    @patch('src.controllers.get_collaborations.SearchResult')
+    @patch('src.controllers.get_collaborations.Channel')
+    def test_get_channels_from_title(self, patch_channel, patch_search, patch_logger):
+        # Halocene is found by Channel.from_title on second possible title
+        # Violet Orlandi is found by SearchResult.from_term, on second result, first title
+        # Lollia is not found
+        # h20Delir raises error during search
+
+        halocene = Channel('id1', 'Halocene', 'uploads1', 'thumbnail1', '')
+        violet_orlandi = Channel('id2', 'Violet Orlandi', 'uploads2', 'thumbnail2', '')
+        searches = [SearchResult("1", "Topic - Violet Orlandi", "term"),
+                    SearchResult("2", "Violet Orlandi", "term"),
+                    SearchResult("3", "Topic - Violet Orlandi & Lauren Babic", "term")]
+
+        def title_side_effect(title):
+            if title == 'Halocene':
+                return halocene
+
+        def id_side_effect(id):
+            if id == '2':
+                return violet_orlandi
+            return MagicMock()
+
+        def search_side_effect(term):
+            if term == 'h20Delir':
+                raise HTTPError("Test Error")
+            else:
+                return searches
+
+        patch_channel.from_title.side_effect = title_side_effect
+        patch_channel.from_id.side_effect = id_side_effect
+        patch_search.from_term.side_effect = search_side_effect
+        video = MagicMock(
+            __repr__=MagicMock(return_value="Test Video"),
+            get_collaborators_from_title=MagicMock(return_value={'Halocene ft.', 'Violet Orlandi', 'Lollia', 'h20Delir'})
+        )
+
+        channels = get_collaborations.get_channels_from_title(video)
+        assert channels == {halocene, violet_orlandi}
+        assert patch_channel.from_id.call_count == 5
+        assert patch_channel.from_title.call_count == 6
+        assert patch_search.from_term.call_count == 3
+        assert call('h20Delir') in patch_search.from_term.call_args_list
+        assert call('Lollia') in patch_search.from_term.call_args_list
+        assert call('Violet Orlandi|Violet') in patch_search.from_term.call_args_list
+        assert patch_logger.error.call_count == 3
+        assert call("Processing channel name 'Lollia' from title of 'Test Video' failed") in patch_logger.error.call_args_list
+        assert call("Processing search term '['h20Delir']' for video 'Test Video' - 'Test Error") in patch_logger.error.call_args_list
+        assert call("Processing channel name 'h20Delir' from title of 'Test Video' failed") in patch_logger.error.call_args_list

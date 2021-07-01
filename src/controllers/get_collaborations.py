@@ -25,15 +25,13 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     :param channel_name: Name of channel to parse, as shown on the Youtube webpage.
     :return: list of Collaboration objects.
     """
-    # Get Channel object for given channel name
     target_channel = get_target_channel(channel_name)
-
-    # Get list of channels referenced by videos of th given channel
     guest_channels = set()
     for video in Video.from_channel(target_channel):
         guest_channels.update(get_channels_from_description(video))
+        guest_channels.update(get_channels_from_title(video))
 
-    # Get list of videos uploaded by given and all referenced channels
+    # Get list of videos uploaded by the given channel and all referenced channels
 
     # Split list of videos into similarly sized groups for parallel processing
 
@@ -91,5 +89,59 @@ def get_channels_from_description(video: Video) -> set:
             channels.update([Channel.from_url(url)])
         except HTTPError as err:
             logger.error(f"Failed processing url '{url}' from video '{video}' - {err}")
+
+    return channels
+
+
+def get_channels_from_title(video: Video) -> set:
+    """
+    Retrieve set of Channel objects for all channels referenced in the given video title.
+    There's no delimiter to show how many words after the @ in a video title are the actual channel title
+    eg: Crocodile Rock (@Halocene ft. @Violet Orlandi @Lollia).
+    "Violet Orlandi" is a channel name, but "Halocene ft." is not, the actual channel name is "Halocene"
+    To accommodate this, we search for all possible combination of words that could make up
+    the channel name. eg: "Halocene|Halocene ft." / "Violet|Violet Orlandi" / "Lollia"
+    We assume the longest successful match is the correct one.
+
+    :param video: Video to parse
+    :return: set of Channel objects for referenced channels
+    """
+
+    def find_channel_by_title(results, titles):
+        # Separate method to allow return from nested loop
+        for result in results:
+            guest = Channel.from_id(result.id)
+            for title_fragment in titles:
+                if guest.title == title_fragment:
+                    return guest
+
+    channels = set()
+
+    for title in video.get_collaborators_from_title():
+        guest = None
+        possible_titles = []
+
+        # Build the list of titles in reverse size order
+        # eg: "Halocene ft." becomes ["Halocene ft.", "Halocene"]
+        title_words = title.split()
+        for idx, word in enumerate(title_words):
+            possible_titles.append(' '.join(title_words[:idx + 1]))
+        possible_titles.reverse()
+
+        for possible_title in possible_titles:
+            if guest := Channel.from_title(possible_title):
+                break
+
+        if not guest:
+            try:
+                search_results = SearchResult.from_term("|".join(possible_titles))
+                guest = find_channel_by_title(search_results, possible_titles)
+            except HTTPError as err:
+                logger.error(f"Processing search term '{possible_titles}' for video '{video}' - '{err}")
+
+        if guest:
+            channels.update([guest])
+        else:
+            logger.error(f"Processing channel name '{title}' from title of '{video}' failed")
 
     return channels
