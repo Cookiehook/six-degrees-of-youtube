@@ -10,6 +10,7 @@ api_keys = os.getenv('YOUTUBE_API_KEYS', '').split(',')
 
 
 class YoutubeObject:
+    """Base class for objects retrieved from the Youtube API"""
 
     @staticmethod
     def get(endpoint: str, params: dict) -> tuple:

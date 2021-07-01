@@ -75,13 +75,13 @@ class VideoTest(YoutubeTestCase):
     def test_get_collaborators_from_title(self):
         title = 'Somebody to love live @ Wembley (Cover with @Violet Orlandi, @Halocene, @Lauren Babic)'
         self.default_video.title = title
-        collaborators = self.default_video.get_titles_from_title()
+        collaborators = self.default_video.get_collaborators_from_title()
         assert collaborators == {'Violet Orlandi', 'Halocene', 'Lauren Babic'}
 
     def test_get_no_collaborators_from_title(self):
         title = 'Beat it - Micheal Jackson cover'
         self.default_video.title = title
-        collaborators = self.default_video.get_titles_from_title()
+        collaborators = self.default_video.get_collaborators_from_title()
         assert collaborators == set()
 
     def test_get_urls_from_description(self):

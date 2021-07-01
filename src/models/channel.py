@@ -12,6 +12,7 @@ logger = logging.getLogger()
 
 
 class Channel(YoutubeObject, db.Model):
+    """Representation of a Channel as returned from the Youtube 'channels' API endpoint"""
     id = db.Column(db.String, primary_key=True)
     title = db.Column(db.String, nullable=False)
     uploads_id = db.Column(db.String, unique=True, nullable=False)
@@ -19,7 +20,7 @@ class Channel(YoutubeObject, db.Model):
     url = db.Column(db.String)
     username = db.Column(db.String)
 
-    def __init__(self, id, title, uploads_id, thumbnail_url, url, username=''):
+    def __init__(self, id: str, title: str, uploads_id: str, thumbnail_url: str, url: str, username: str = ''):
         self.id = id
         self.title = title
         self.uploads_id = uploads_id
@@ -34,11 +35,26 @@ class Channel(YoutubeObject, db.Model):
         return self.title
 
     @classmethod
-    def from_title(cls, title):
+    def from_title(cls, title: str):
+        """
+        Queries the cache for a channel with the given title.
+
+        :param title: Title to match, eg: 'Violet Orlandi'.
+        :return: Matching Channel instance or None.
+        """
         return cls.query.filter_by(title=title).first()
 
     @classmethod
-    def from_id(cls, id, cache_only=False):
+    def from_id(cls, id: str, cache_only: bool = False):
+        """
+        Queries the cache, then the API for a channel with the given ID.
+        Returns matching instance or None.
+
+        :param id: Youtube channel ID, eg: 'UCo3AxjxePfj6DHn03aiIhww'.
+        :param cache_only: Default False. If True, only search the cache.
+        :return: Matching Channel instance or None.
+        :raises: AssertionError if more or less than 1 channel is returned from the API
+        """
         if cached := cls.query.filter_by(id=id).first():
             return cached
         if cache_only:
@@ -56,7 +72,16 @@ class Channel(YoutubeObject, db.Model):
                    )
 
     @classmethod
-    def from_username(cls, username, cache_only=False):
+    def from_username(cls, username: str, cache_only: bool = False):
+        """
+        Queries the cache, then the API for a channel with the given username.
+        Returns matching instance or None.
+
+        :param username: Youtube channel username, eg: 'VioletaOrlandi'.
+        :param cache_only: Default False. If True, only search the cache.
+        :return: Matching Channel instance or None.
+        :raises: AssertionError if more or less than 1 channel is returned from the API
+        """
         if cached := cls.query.filter_by(username=username).first():
             return cached
         if cache_only:
@@ -81,14 +106,17 @@ class Channel(YoutubeObject, db.Model):
     @classmethod
     def from_url(cls, url, cache_only=False):
         """
-        Retrieve the Channel by visiting the URL and parsing the metadata tags
+        Queries the cache, then the web for a channel with the given url.
+        Channel id is retrieved by visiting the URL and parsing the metadata tags
         This uses requests instead of API as the only API method is to use the generic search. This
         is expensive in terms of quota usage, and not particularly accurate.
         Some URLs of the form 'youtube.com/url' are actually usernames, redirecting to 'youtube.com/user/url'
         The checking of these responses and caching of is_username allows reuse of cache
 
-        :param url: URL to look up
-        :param cache_only: default False. If True, only retrieves channels from db
+        :param url: URL to look up. eg: 'VioletOrlandi'
+        :param cache_only: Default False. If True, only search the cache.
+        :return: Matching Channel instance or None.
+        :raises: HTTPError if Youtube responds with non 200 response code, or metadata tag is not found.
         """
         if UrlLookup.url_is_username(url):
             return cls.from_username(UrlLookup.get_resolved(url))

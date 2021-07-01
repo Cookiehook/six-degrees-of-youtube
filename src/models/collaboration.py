@@ -7,6 +7,10 @@ from src.models.video import Video
 
 
 class Collaboration(db.Model):
+    """
+    Representation of a collaborative work between two channels.
+    Contains both channels, and the video they collaborated on.
+    """
     id = db.Column(db.Integer, primary_key=True)
     channel_1_id = db.Column(db.String, db.ForeignKey('channel.id'))
     channel_2_id = db.Column(db.String, db.ForeignKey('channel.id'))
@@ -30,6 +34,12 @@ class Collaboration(db.Model):
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
-    @staticmethod
-    def get_for_channel_ids(channel_ids):
-        return Collaboration.query.filter(and_(Collaboration.channel_1_id.in_(channel_ids), Collaboration.channel_2_id.in_(channel_ids))).all()
+    @classmethod
+    def get_for_channel_ids(cls, channel_ids: list) -> list:
+        """
+        Return all collaboration objects where both channel IDs are in the provided list.
+
+        :param channel_ids: list of channel IDs to filter by.
+        :return: list of matching Collaboration objects.
+        """
+        return cls.query.filter(and_(cls.channel_1_id.in_(channel_ids), cls.channel_2_id.in_(channel_ids))).all()
