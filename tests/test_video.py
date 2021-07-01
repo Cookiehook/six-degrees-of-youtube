@@ -184,7 +184,8 @@ class TestVideo(TestYoutube):
         assert requests.call_count == 0
 
     @responses.activate
-    def test_get_from_uploads_new(self):
+    @patch('src.models.video.Video.commit')
+    def test_get_from_uploads_new(self, patch_commit):
         def side_effect(endpoint, params):
             videos = []
             for i in range(11):
@@ -204,15 +205,17 @@ class TestVideo(TestYoutube):
                 return videos[8:12], None
 
         channel = MagicMock(id='1', uploads_id='abc123')
-        with patch('src.models.video.Video.get', side_effect=side_effect) as get_patch:
+        with patch('src.models.video.Video.get', side_effect=side_effect) as patch_get:
             uploads = Video.from_channel(channel)
-            assert get_patch.call_count == 3
+            assert patch_get.call_count == 3
+            assert patch_commit.call_count == 1
             assert len(uploads) == 11
 
     @responses.activate
+    @patch('src.models.video.Video.commit')
     @patch('src.models.video.Video.get')
     @patch('src.models.video.logger')
-    def test_get_from_uploads_update_with_clash(self, logger_patch, get_patch):
+    def test_get_from_uploads_update_with_clash(self, patch_logger, patch_get, patch_commit):
         videos = []
         for i in range(3):
             videos.append({
@@ -226,8 +229,9 @@ class TestVideo(TestYoutube):
         Video('id_1', '1', 'title-1', 'description', datetime.datetime.now())
         Video('id_2', '1', 'title-2', 'description', datetime.datetime.now() + datetime.timedelta(hours=6))
         channel = MagicMock(id='1', uploads_id='abc123')
-        get_patch.return_value = videos, None
+        patch_get.return_value = videos, None
         uploads = Video.from_channel(channel)
-        assert get_patch.call_count == 1
-        assert logger_patch.warning.call_args_list[0] == call('Tried to cache video id_1 when it already exists')
+        assert patch_get.call_count == 1
+        assert patch_commit.call_count == 1
+        assert patch_logger.warning.call_args_list[0] == call('Tried to cache video id_1 when it already exists')
         assert len(uploads) == 3

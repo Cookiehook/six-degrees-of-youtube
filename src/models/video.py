@@ -37,6 +37,10 @@ class Video(YoutubeObject, db.Model):
     def __repr__(self):
         return self.title + " - " + self.id
 
+    @staticmethod
+    def commit():
+        db.session.commit()
+
     @classmethod
     def from_id(cls, id: str, cache_only: bool = False):
         """
@@ -89,7 +93,7 @@ class Video(YoutubeObject, db.Model):
         while True:
             for new_video in playlist_content:
                 if latest_video and latest_video.id == new_video['snippet']['resourceId']['videoId']:
-                    db.session.commit()
+                    cls.commit()
                     return unprocessed_videos
                 if new_video['snippet']['resourceId']['videoId'] in ids:
                     # Items uploaded on the same day aren't in the right order. Eg, videos at 1pm, 2pm, 3pm may come
@@ -105,7 +109,7 @@ class Video(YoutubeObject, db.Model):
                                               datetime.datetime.strptime(new_video['snippet']['publishedAt'],
                                                                          '%Y-%m-%dT%H:%M:%SZ')))
             if next_page is None:
-                db.session.commit()
+                cls.commit()
                 return unprocessed_videos
             params['pageToken'] = next_page
             playlist_content, next_page = cls.get('playlistItems', params)
