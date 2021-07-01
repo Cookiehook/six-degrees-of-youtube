@@ -42,5 +42,5 @@ class TestCollaboration(TestYoutube):
         Collaboration(c5, c4, v)
         Collaboration(c1, c4, v)
 
-        collabs = Collaboration.get_for_channel_ids(['1', '2', '3'])
+        collabs = Collaboration.for_channel_ids(['1', '2', '3'])
         assert set(collabs) == {col_1, col_2, col_3}

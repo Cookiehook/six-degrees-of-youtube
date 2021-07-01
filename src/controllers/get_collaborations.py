@@ -4,6 +4,7 @@ from multiprocessing import Process
 from requests import HTTPError
 
 from src.models.channel import Channel
+from src.models.collaboration import Collaboration
 from src.models.search import SearchResult
 from src.models.video import Video
 
@@ -31,12 +32,7 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     videos = get_uploads_for_channels(guest_channels)
     processes = distribute_videos(videos)
     process_threads(processes)
-
-    # Split list of videos into similarly sized groups for parallel processing
-
-    # Create Collaboration objects for each video
-
-    # Return Collaborations relevant for the given artist
+    return Collaboration.for_channel_ids([c.id for c in guest_channels])
 
 
 def get_target_channel(channel_name: str) -> Channel:
@@ -192,4 +188,21 @@ def process_threads(processes: list):
 
 
 def populate_collaborations(videos: list):
-    pass
+    """
+    Iterate through a list of video objects, and create a Collaboration object
+    for each identified work. These aren't returned as a later stage extracts all
+    relevant collaborations from the database, populated by multiple threads
+
+    :param videos: list of videos to process
+    """
+    for video in videos:
+        collaborators = set()
+        host = Channel.from_id(video.channel_id)
+        collaborators.update(get_channels_from_description(video))
+        collaborators.update(get_channels_from_title(video))
+        for guest in collaborators:
+            if host.id == guest.id:
+                continue  # Happens when an artist references another of their videos in the description
+            Collaboration(host, guest, video)
+        video.processed = True
+    Video.commit()

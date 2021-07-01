@@ -205,3 +205,29 @@ class TestGetEntrypoint(TestYoutube):
         for p in processes:
             assert p.start.call_count == 1
             assert p.join.call_count == 1
+
+    @patch('src.controllers.get_collaborations.Collaboration')
+    @patch('src.controllers.get_collaborations.Channel')
+    @patch('src.controllers.get_collaborations.get_channels_from_description')
+    @patch('src.controllers.get_collaborations.get_channels_from_title')
+    def test_populate_collaborations(self, patch_title, patch_description,
+                                     patch_channel, patch_collaboration):
+        v1 = MagicMock()
+        v2 = MagicMock()
+        c1 = MagicMock(id="id_1")
+        c2 = MagicMock(id="id_2")
+        c_host = MagicMock(id="id_host")
+        patch_title.return_value = {c1}
+        patch_description.return_value = {c1, c2, c_host}
+        patch_channel.from_id.return_value = c_host
+        get_collaborations.populate_collaborations([v1, v2])
+
+        assert v1.processed is True
+        assert v2.processed is True
+        assert patch_collaboration.call_count == 4
+        assert call(c_host, c1, v1) in patch_collaboration.call_args_list
+        assert call(c_host, c2, v1) in patch_collaboration.call_args_list
+        assert call(c_host, c1, v2) in patch_collaboration.call_args_list
+        assert call(c_host, c2, v2) in patch_collaboration.call_args_list
+        assert call(c_host, c_host, v1) not in patch_collaboration.call_args_list
+        assert call(c_host, c_host, v2) not in patch_collaboration.call_args_list

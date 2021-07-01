@@ -35,7 +35,7 @@ class Collaboration(db.Model):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
     @classmethod
-    def get_for_channel_ids(cls, channel_ids: list) -> list:
+    def for_channel_ids(cls, channel_ids: list) -> list:
         """
         Return all collaboration objects where both channel IDs are in the provided list.
 
