@@ -38,7 +38,6 @@ class YoutubeObject:
             return YoutubeObject.get(endpoint, params)
 
         # Unrecoverable errors. Raised for calling methods to handle
-        message = f"Failed API call with: '{endpoint}' - '{params}'"
         if response.status_code == 403:
             raise RuntimeError(response.json())
         elif response.status_code < 200 or response.status_code >= 400:

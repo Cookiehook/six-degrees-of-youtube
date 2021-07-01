@@ -36,11 +36,11 @@ class TestCollaboration(TestYoutube):
         v = Video('1', '', 'video_title', '', datetime.datetime.now())
 
         col_1 = Collaboration(c1, c2, v)
-        col_2 = Collaboration(c2, c1, v)
-        col_3 = Collaboration(c3, c1, v)
+        col_2 = Collaboration(c1, c3, v)
+        col_3 = Collaboration(c3, c2, v)
         Collaboration(c3, c5, v)
         Collaboration(c5, c4, v)
-        Collaboration(c1, c4, v)
+        Collaboration(c2, c4, v)
 
-        collabs = Collaboration.for_channel_ids(['1', '2', '3'])
+        collabs = Collaboration.for_target_channel(c1)
         assert set(collabs) == {col_1, col_2, col_3}

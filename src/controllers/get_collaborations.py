@@ -38,7 +38,7 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         processes = distribute_videos(videos)
         process_threads(processes)
 
-    return Collaboration.for_channel_ids([c.id for c in guest_channels])
+    return Collaboration.for_target_channel(target_channel)
 
 
 def get_target_channel(channel_name: str) -> Channel:

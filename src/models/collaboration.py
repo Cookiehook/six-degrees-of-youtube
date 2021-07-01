@@ -15,9 +15,9 @@ class Collaboration(db.Model):
     channel_1_id = db.Column(db.String, db.ForeignKey('channel.id'))
     channel_2_id = db.Column(db.String, db.ForeignKey('channel.id'))
     video_id = db.Column(db.String, db.ForeignKey('video.id'))
-    channel_1 = relationship("Channel", foreign_keys=[channel_1_id])
-    channel_2 = relationship("Channel", foreign_keys=[channel_2_id])
-    video = relationship("Video", backref="collaboration")
+    channel_1 = relationship("Channel", foreign_keys=[channel_1_id], lazy='subquery')
+    channel_2 = relationship("Channel", foreign_keys=[channel_2_id], lazy='subquery')
+    video = relationship("Video", backref="collaboration", lazy='subquery')
 
     def __init__(self, channel_1: Channel, channel_2: Channel, video: Video):
         self.channel_1 = channel_1
@@ -35,11 +35,12 @@ class Collaboration(db.Model):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
     @classmethod
-    def for_channel_ids(cls, channel_ids: list) -> list:
+    def for_target_channel(cls, target_channel) -> list:
         """
-        Return all collaboration objects where both channel IDs are in the provided list.
+        Return all collaborations involving the host channel and any of the host's collaborators
 
-        :param channel_ids: list of channel IDs to filter by.
+        :param target_channel: Channel object for target channel
         :return: list of matching Collaboration objects.
         """
-        return cls.query.filter(and_(cls.channel_1_id.in_(channel_ids), cls.channel_2_id.in_(channel_ids))).all()
+        partners = [c.channel_2_id for c in Collaboration.query.filter_by(channel_1_id=target_channel.id)] + [target_channel.id]
+        return cls.query.filter(and_(cls.channel_1_id.in_(partners), cls.channel_2_id.in_(partners))).all()
