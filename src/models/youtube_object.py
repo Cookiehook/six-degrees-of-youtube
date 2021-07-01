@@ -24,7 +24,7 @@ class YoutubeObject:
         :raises: RuntimeError if an unrecoverable authentication error occurs
         """
 
-        logger.debug(f"Querying API with: '{endpoint}' - '{params}")
+        logger.info(f"Querying API with: '{endpoint}' - '{params}")
         base_url = os.getenv('YOUTUBE_API_URL', 'https://www.googleapis.com/youtube/v3/')
 
         auth_params = copy(params)  # Make a copy so the key doesn't end up in logs

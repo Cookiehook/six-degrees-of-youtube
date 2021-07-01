@@ -127,7 +127,7 @@ class Channel(YoutubeObject, db.Model):
         if cache_only:
             return
 
-        logger.debug(f"Querying web for channel with URL {url}")
+        logger.info(f"Querying web for channel with URL {url}")
         response = requests.get(f'https://www.youtube.com/{url}', cookies={'CONSENT': 'YES+GB.en-GB+V9+BX'})
 
         if response.status_code == 200:

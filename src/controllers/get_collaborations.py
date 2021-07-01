@@ -25,6 +25,7 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     """
     target_channel = get_target_channel(channel_name)
     guest_channels = set()
+    # TODO - Make this multithreaded too. Maybe scale the whole thing with external lambdas rather than threads?
     for video in Video.from_channel(target_channel):
         guest_channels.update(get_channels_from_description(video))
         guest_channels.update(get_channels_from_title(video))
