@@ -183,7 +183,7 @@ class TestGetEntrypoint(TestYoutube):
                     Channel('id3', 'title3', 'uploads3', 'thumbnail3', '')}
         videos = get_collaborations.get_uploads_for_channels(channels)
         assert len(videos) == 4
-        assert all([isinstance(v, Video) for v in videos])
+        assert all([isinstance(v, str) for v in videos])
         assert patch_logger.error.call_count == 1
         assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title3' - 'TestError'")
 
@@ -208,26 +208,19 @@ class TestGetEntrypoint(TestYoutube):
 
     @patch('src.controllers.get_collaborations.Collaboration')
     @patch('src.controllers.get_collaborations.Channel')
+    @patch('src.controllers.get_collaborations.Video.from_id')
     @patch('src.controllers.get_collaborations.get_channels_from_description')
     @patch('src.controllers.get_collaborations.get_channels_from_title')
-    def test_populate_collaborations(self, patch_title, patch_description,
+    def test_populate_collaborations(self, patch_title, patch_description, patch_video_from_id,
                                      patch_channel, patch_collaboration):
-        v1 = MagicMock()
-        v2 = MagicMock()
         c1 = MagicMock(id="id_1")
         c2 = MagicMock(id="id_2")
         c_host = MagicMock(id="id_host")
         patch_title.return_value = {c1}
         patch_description.return_value = {c1, c2, c_host}
         patch_channel.from_id.return_value = c_host
-        get_collaborations.populate_collaborations([v1, v2])
+        get_collaborations.populate_collaborations(['id1', 'id1'])
 
-        assert v1.processed is True
-        assert v2.processed is True
         assert patch_collaboration.call_count == 4
-        assert call(c_host, c1, v1) in patch_collaboration.call_args_list
-        assert call(c_host, c2, v1) in patch_collaboration.call_args_list
-        assert call(c_host, c1, v2) in patch_collaboration.call_args_list
-        assert call(c_host, c2, v2) in patch_collaboration.call_args_list
-        assert call(c_host, c_host, v1) not in patch_collaboration.call_args_list
-        assert call(c_host, c_host, v2) not in patch_collaboration.call_args_list
+        assert set([call.args[0].id for call in patch_collaboration.call_args_list]) == {'id_host'}
+        assert set([call.args[1].id for call in patch_collaboration.call_args_list]) == {'id_1', 'id_2'}

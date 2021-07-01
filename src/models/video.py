@@ -188,5 +188,8 @@ class Video(YoutubeObject, db.Model):
         bitly_links = re.findall(pattern, self.description)
         self.description = re.sub(pattern, "", self.description)
         for link in bitly_links:
-            resp = requests.get(link)
-            self.description += f" {resp.url} "
+            try:
+                resp = requests.get(link)
+                self.description += f" {resp.url} "
+            except Exception as e:
+                logger.error(f"Processing bitly link '{link}' for video '{self}' - {e}")

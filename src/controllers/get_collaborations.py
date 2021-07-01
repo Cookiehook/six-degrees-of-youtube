@@ -1,4 +1,5 @@
 import logging
+import os
 from multiprocessing import Process
 
 from requests import HTTPError
@@ -24,15 +25,19 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     :return: list of Collaboration objects.
     """
     target_channel = get_target_channel(channel_name)
-    guest_channels = set()
-    # TODO - Make this multithreaded too. Maybe scale the whole thing with external lambdas rather than threads?
+    logger.info(f"Found target channel '{target_channel}'")
+    guest_channels = {target_channel}
+    # TODO - Make this multi-threaded too. Maybe scale the whole thing with external lambdas rather than threads?
     for video in Video.from_channel(target_channel):
+        logger.debug(f"Parsing host video '{video}'")
         guest_channels.update(get_channels_from_description(video))
         guest_channels.update(get_channels_from_title(video))
 
     videos = get_uploads_for_channels(guest_channels)
-    processes = distribute_videos(videos)
-    process_threads(processes)
+    if videos:
+        processes = distribute_videos(videos)
+        process_threads(processes)
+
     return Collaboration.for_channel_ids([c.id for c in guest_channels])
 
 
@@ -152,8 +157,9 @@ def get_uploads_for_channels(channels: set) -> list:
     """
     videos = []
     for channel in channels:
+        logger.info(f"Getting uploads for channel '{channel}'")
         try:
-            videos.extend(Video.from_channel(channel))
+            videos.extend([v.id for v in Video.from_channel(channel)])
         except HTTPError as e:
             logger.error(f"Processing uploads for channel '{channel}' - '{e}'")
 
@@ -196,7 +202,10 @@ def populate_collaborations(videos: list):
 
     :param videos: list of videos to process
     """
-    for video in videos:
+    logger.info(f"Populating collaborations for PID '{os.getpid()}'")
+    for video_id in videos:
+        video = Video.from_id(video_id)
+        logger.debug(f"Populating collaborations for video '{video}'")
         collaborators = set()
         host = Channel.from_id(video.channel_id)
         collaborators.update(get_channels_from_description(video))

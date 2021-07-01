@@ -43,8 +43,7 @@ class TestYoutubeObject(TestCase):
         assert next_page == 'mock-token'
 
     @responses.activate
-    @patch('src.models.youtube_object.logger')
-    def test_failed_authentication_without_recovery(self, logger):
+    def test_failed_authentication_without_recovery(self):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"err": "mock-authentication-error"},
@@ -53,7 +52,6 @@ class TestYoutubeObject(TestCase):
         with self.assertRaises(RuntimeError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == {"err": "mock-authentication-error"}
-        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")
 
     @responses.activate
     @patch('src.models.youtube_object.logger')
@@ -73,8 +71,7 @@ class TestYoutubeObject(TestCase):
         assert logger.warning.call_args_list[0] == call("API quota limit reached, swapping key")
 
     @responses.activate
-    @patch('src.models.youtube_object.logger')
-    def test_resource_not_found(self, logger):
+    def test_resource_not_found(self):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"err": "mock-not-found-error"},
@@ -83,11 +80,9 @@ class TestYoutubeObject(TestCase):
         with self.assertRaises(HTTPError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == {"err": "mock-not-found-error"}
-        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")
 
     @responses.activate
-    @patch('src.models.youtube_object.logger')
-    def test_empty_items_response(self, logger):
+    def test_empty_items_response(self):
         youtube_object.api_keys = ['KeyOne']
         responses.add(responses.GET, 'https://www.googleapis.com/youtube/v3/mock-endpoint',
                       json={"items": []},
@@ -96,4 +91,3 @@ class TestYoutubeObject(TestCase):
         with self.assertRaises(HTTPError) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == 'API responded with no items'
-        assert logger.error.call_args_list[0] == call("Failed API call with: 'mock-endpoint' - '{'mock_attribute': 'mock_value'}'")
