@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch, call, MagicMock
 
 from requests import HTTPError
@@ -5,6 +6,7 @@ from requests import HTTPError
 from src.controllers import get_collaborations
 from src.models.channel import Channel
 from src.models.search import SearchResult
+from src.models.video import Video
 from tests.base_testcase import TestYoutube
 
 
@@ -166,9 +168,14 @@ class TestGetEntrypoint(TestYoutube):
     @patch('src.controllers.get_collaborations.Video')
     def test_get_uploads_for_channels(self, patch_video, patch_logger):
         def side_effect(channel):
-            if channel.id in ['id1', 'id3']:
-                return [MagicMock(), MagicMock()]
-            raise HTTPError("TestError")
+            if channel.id == 'id1':
+                return [Video('1', 'id1', 'title1', 'desc', datetime.datetime.now()),
+                        Video('2', 'id1', 'title2', 'desc', datetime.datetime.now())]
+            elif channel.id == 'id2':
+                return [Video('3', 'id2', 'title3', 'desc', datetime.datetime.now()),
+                        Video('4', 'id2', 'title4', 'desc', datetime.datetime.now())]
+            else:
+                raise HTTPError("TestError")
 
         patch_video.from_channel.side_effect = side_effect
         channels = {Channel('id1', 'title1', 'uploads1', 'thumbnail1', ''),
@@ -176,5 +183,25 @@ class TestGetEntrypoint(TestYoutube):
                     Channel('id3', 'title3', 'uploads3', 'thumbnail3', '')}
         videos = get_collaborations.get_uploads_for_channels(channels)
         assert len(videos) == 4
+        assert all([isinstance(v, Video) for v in videos])
         assert patch_logger.error.call_count == 1
-        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title2' - 'TestError'")
+        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title3' - 'TestError'")
+
+    def test_distribute_videos(self):
+        # Check that all videos are accounted for in distribution, regardless of list length
+        for i in range(1, 100):
+            videos = []
+            for j in range(1, i):
+                videos.append(Video(f"{j}", f"channel_{j}", f"title_{j}", f"uploads_{j}", datetime.datetime.now()))
+            processes = get_collaborations.distribute_videos(videos)
+            distributed_videos = []
+            for p in processes:
+                distributed_videos.extend(p._args[0])
+            assert set(distributed_videos) == set(videos)
+
+    def test_process_threads(self):
+        processes = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        get_collaborations.process_threads(processes)
+        for p in processes:
+            assert p.start.call_count == 1
+            assert p.join.call_count == 1

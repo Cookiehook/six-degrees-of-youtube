@@ -1,4 +1,5 @@
 import logging
+from multiprocessing import Process
 
 from requests import HTTPError
 
@@ -11,12 +12,8 @@ logger = logging.getLogger()
 
 def get_collaborations_for_channel(channel_name: str) -> list:
     """
-    Identifies all collaborations that a particular channel has made by:
-        1) Retrieves all videos uploaded by the given channel.
-        2) Search for any channels referenced in those videos, by tags or hyperlinks.
-        3) Retrieve all referenced channels and their uploads.
-        4) Parse all videos from step 1 and 3, creating collaboration objects for each video and channel pairing.
-        5) Return any collaboration objects where both channels are the input channel or in the list from step 3.
+    Identifies all collaborations that a particular channel has made by parsing tags and hyperlinks
+    in all videos uploaded by that channel. A collaboration instance is created for each.
 
     A collaboration object records the video that was created, the uploading channel and referenced channel.
     If multiple channels collaborated on one video, a collaboration object is created for the host and each referenced channel.
@@ -32,6 +29,8 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         guest_channels.update(get_channels_from_title(video))
 
     videos = get_uploads_for_channels(guest_channels)
+    processes = distribute_videos(videos)
+    process_threads(processes)
 
     # Split list of videos into similarly sized groups for parallel processing
 
@@ -157,8 +156,40 @@ def get_uploads_for_channels(channels: set) -> list:
     videos = []
     for channel in channels:
         try:
-            videos.extend([v.id for v in Video.from_channel(channel)])
+            videos.extend(Video.from_channel(channel))
         except HTTPError as e:
             logger.error(f"Processing uploads for channel '{channel}' - '{e}'")
 
     return videos
+
+
+def distribute_videos(videos: list) -> list:
+    """
+    Split the list of videos into 10 similarly sized groups
+    and create a thread to process each list
+
+    :param videos: list of Video objects
+    :return: list of Process objects
+    """
+
+    processes = []
+    for chunk in [videos[i::10] for i in range(10)]:
+        processes.append(Process(target=populate_collaborations, args=(chunk,)))
+    return processes
+
+
+def process_threads(processes: list):
+    """
+    Start all processes and wait for completion
+
+    :param processes: list of process objects
+    :return:
+    """
+    for process in processes:
+        process.start()
+    for process in processes:
+        process.join()
+
+
+def populate_collaborations(videos: list):
+    pass
