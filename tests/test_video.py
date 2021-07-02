@@ -156,41 +156,6 @@ class TestVideo(TestYoutube):
         urls = self.default_video.get_video_ids_from_description()
         assert urls == set()
 
-    @patch('src.models.video.logger')
-    def test_replace_bitly_links(self, patch_logger):
-        description = """
-        Collaborated with http://bit.ly/2usJ3lq
-        Go see my producer's vlogs at http://bit.ly/gesgttgs for future updates
-        Check out my second channel http://bit.ly/uyrsh5"""
-        self.default_video.description = description
-
-        def response_callback(resp):
-            if resp.url == 'http://bit.ly/gesgttgs':
-                raise Exception('Test Error')
-            resp.url = "https://youtube.com/channel/1234567890"
-            return resp
-
-        with responses.RequestsMock(response_callback=response_callback) as m:
-            m.add(responses.GET, 'http://bit.ly/2usJ3lq')
-            m.add(responses.GET, 'http://bit.ly/uyrsh5')
-            self.default_video.resolve_bitly_links()
-            assert self.default_video.description.endswith(
-                ' https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890 ')
-            assert patch_logger.error.call_count == 1
-            assert patch_logger.error.call_args_list[0] == \
-                   call("Processing bitly link 'http://bit.ly/gesgttgs' for video 'default_title - default_id'"
-                        " - 'ConnectionError' object has no attribute 'url'")
-
-    @patch('src.models.video.requests')
-    def test_no_bitly_links(self, requests):
-        description = """
-        Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
-        """
-        self.default_video.description = description
-        self.default_video.resolve_bitly_links()
-        assert requests.call_count == 0
-
     @responses.activate
     @patch('src.models.video.Video.commit')
     def test_get_from_uploads_new(self, patch_commit):

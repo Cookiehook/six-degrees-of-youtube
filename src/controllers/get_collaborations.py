@@ -34,18 +34,19 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         guest_channels.update(get_channels_from_title(video))
 
     videos = get_uploads_for_channels(guest_channels)
-    if videos:
-        processes = distribute_videos(videos)
-        process_threads(processes)
+    populate_collaborations(videos)
+    # if videos:
+    #     processes = distribute_videos(videos)
+    #     process_threads(processes)
 
-    # Re-run the processing of collaborator videos. In most instances, this is bypassed in seconds
-    # However, if the target channel was previously identified as a collaborator of another, the 2nd order
-    # collaborations would not have been calculated. This forced them to be re-calculated
-    collaborators = Collaboration.get_collaborators(target_channel)
-    videos = get_uploads_for_channels(collaborators)
-    if videos:
-        processes = distribute_videos(videos)
-        process_threads(processes)
+    # # Re-run the processing of collaborator videos. In most instances, this is bypassed in seconds
+    # # However, if the target channel was previously identified as a collaborator of another, the 2nd order
+    # # collaborations would not have been calculated. This forced them to be re-calculated
+    # collaborators = Collaboration.get_collaborators(target_channel)
+    # videos = get_uploads_for_channels(collaborators)
+    # if videos:
+    #     processes = distribute_videos(videos)
+    #     process_threads(processes)
 
     return Collaboration.for_target_channel(target_channel)
 
@@ -185,7 +186,7 @@ def distribute_videos(videos: list) -> list:
     """
 
     processes = []
-    for chunk in [videos[i::20] for i in range(10)]:
+    for chunk in [videos[i::10] for i in range(10)]:
         processes.append(Process(target=populate_collaborations, args=(chunk,)))
     return processes
 

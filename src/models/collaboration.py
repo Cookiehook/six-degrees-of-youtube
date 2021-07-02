@@ -40,7 +40,9 @@ class Collaboration(db.Model):
         return False
 
     def __hash__(self):
-        return hash((self.channel_1_id, self.channel_2_id))
+        c1 = self.channel_1_id if self.channel_1_id > self.channel_2_id else self.channel_2_id
+        c2 = self.channel_1_id if self.channel_1_id < self.channel_2_id else self.channel_2_id
+        return hash((c1, c2))
 
     @classmethod
     def get_collaborators(cls, target_channel: Channel) -> set:

@@ -2,8 +2,6 @@ import datetime
 import logging
 import re
 
-import requests
-
 from src.extensions import db
 from src.models.channel import Channel
 from src.models.youtube_object import YoutubeObject
@@ -140,7 +138,6 @@ class Video(YoutubeObject, db.Model):
 
         :return: set of endpoints for Youtube website. eg: {'VioletOrlandi'}
         """
-        self.resolve_bitly_links()
         match_1 = re.findall(r'youtube.com/c/([\w_\-]+)', self.description, re.UNICODE)
         match_2 = re.findall(r'youtube.com/([\w_\-]+\s)', self.description, re.UNICODE)
         return {url.strip() for url in match_1 + match_2}
@@ -152,7 +149,6 @@ class Video(YoutubeObject, db.Model):
 
         :return: set of usernames eg: {'VioletaOrlandi'}
         """
-        self.resolve_bitly_links()
         match = re.findall(r'youtube.com/user/([\w_\-]+)', self.description, re.UNICODE)
         return {user.strip() for user in match}
 
@@ -163,7 +159,6 @@ class Video(YoutubeObject, db.Model):
 
         :return: set of channel IDs. eg: {'UCo3AxjxePfj6DHn03aiIhww'}
         """
-        self.resolve_bitly_links()
         match = re.findall(r'youtube.com/channel/([a-zA-Z0-9_\-]+)', self.description)
         return {c.strip() for c in match}
 
@@ -175,21 +170,6 @@ class Video(YoutubeObject, db.Model):
         :return: set of video IDs. eg: {'53XW1xxmmuM'}
         """
 
-        self.resolve_bitly_links()
         match_1 = re.findall(r'youtube.com/watch\?v=([a-zA-Z0-9_\-]+)', self.description)
         match_2 = re.findall(r'youtu.be/([a-zA-Z0-9_\-]+)', self.description)
         return {v.strip() for v in match_1 + match_2}
-
-    def resolve_bitly_links(self):
-        """
-        Removes bit.ly/abc123 links and appends their resolved url to the video description
-        """
-        pattern = r'http://bit.ly/[a-zA-Z0-9]+'
-        bitly_links = re.findall(pattern, self.description)
-        self.description = re.sub(pattern, "", self.description)
-        for link in bitly_links:
-            try:
-                resp = requests.get(link)
-                self.description += f" {resp.url} "
-            except Exception as e:
-                logger.error(f"Processing bitly link '{link}' for video '{self}' - {e}")
