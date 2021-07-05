@@ -1,6 +1,3 @@
-import json
-import os
-
 from flask import Blueprint, current_app, request, render_template, jsonify
 
 from src.controllers import get_collaborations
@@ -68,12 +65,14 @@ def generate_collaboration_graph():
         "nodes": [{"id": k, "url": f"https://www.youtube.com/channel/{v['id']}", "fill": {"src": v["fill"]}} for k, v in nodes.items()],
         "edges": edges
     }
+    # import json
+    # import os
     # with open(os.path.join('data', 'violet_collabs.json'), 'r') as collab_file:
     #     collabs_json = json.loads(collab_file.read())
 
     return render_template('draw_graph.html',
-                           collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x:x['id'] ),
-                                        'edges': sorted(collabs_json['edges'], key=lambda x:x['id'])},
+                           collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x: x['id']),
+                                        'edges': sorted(collabs_json['edges'], key=lambda x: x['id'])},
                            node_size=1000 / len(collabs_json['nodes']),
                            target_channel_name=target_channel_name)
 

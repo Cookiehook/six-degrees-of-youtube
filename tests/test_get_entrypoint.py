@@ -169,11 +169,11 @@ class TestGetEntrypoint(TestYoutube):
     def test_get_uploads_for_channels(self, patch_video, patch_logger):
         def side_effect(channel):
             if channel.id == 'id1':
-                return [Video('1', 'id1', 'title1', 'desc', datetime.datetime.now()),
-                        Video('2', 'id1', 'title2', 'desc', datetime.datetime.now())]
+                return [Video('1', 'id1', 'title1', 'desc', 'thumb', datetime.datetime.now()),
+                        Video('2', 'id1', 'title2', 'desc', 'thumb', datetime.datetime.now())]
             elif channel.id == 'id2':
-                return [Video('3', 'id2', 'title3', 'desc', datetime.datetime.now()),
-                        Video('4', 'id2', 'title4', 'desc', datetime.datetime.now())]
+                return [Video('3', 'id2', 'title3', 'desc', 'thumb', datetime.datetime.now()),
+                        Video('4', 'id2', 'title4', 'desc', 'thumb', datetime.datetime.now())]
             else:
                 raise HTTPError("TestError")
 
@@ -192,7 +192,7 @@ class TestGetEntrypoint(TestYoutube):
         for i in range(1, 100):
             videos = []
             for j in range(1, i):
-                videos.append(Video(f"{j}", f"channel_{j}", f"title_{j}", f"uploads_{j}", datetime.datetime.now()))
+                videos.append(Video(f"{j}", f"channel_{j}", f"title_{j}", f"uploads_{j}", f"thumbnails_{j}", datetime.datetime.now()))
             processes = get_collaborations.distribute_videos(videos)
             distributed_videos = []
             for p in processes:

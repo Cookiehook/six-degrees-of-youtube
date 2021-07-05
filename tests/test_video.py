@@ -50,7 +50,7 @@ class TestVideo(TestYoutube):
                 "channelId": "api_channel_id",
                 "title": "api_title",
                 "description": "api_description",
-                "thumbnails": [{"medium": {"url": "thumb"}}],
+                "thumbnails": {"medium": {"url": "thumb"}},
                 "publishedAt": "2020-01-01T06:30:45Z"
             }
         }]
@@ -170,7 +170,7 @@ class TestVideo(TestYoutube):
                         "channelId": f"channel_id_{i}",
                         "title": f"title_{i}",
                         "description": f"description_{i}",
-                        "thumbnails": [{"medium": {"url": "thumb"}}],
+                        "thumbnails": {"medium": {"url": "thumb"}},
                         "publishedAt": "2020-01-01T06:30:45Z",
                     }})
             if 'pageToken' not in params:
@@ -200,7 +200,7 @@ class TestVideo(TestYoutube):
                     "channelId": f"channel_id_{i}",
                     "title": f"title_{i}",
                     "description": f"description_{i}",
-                    "thumbnails": [{"medium": {"url": "thumb"}}],
+                    "thumbnails": {"medium": {"url": "thumb"}},
                     "publishedAt": f"2020-01-01T06:30:0{i}Z",
                 }})
         Video('id_1', '1', 'title-1', 'description', 'thumbnail', datetime.datetime.now())
