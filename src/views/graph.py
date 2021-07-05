@@ -74,7 +74,8 @@ def generate_collaboration_graph():
                            collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x: x['id']),
                                         'edges': sorted(collabs_json['edges'], key=lambda x: x['id'])},
                            node_size=1000 / len(collabs_json['nodes']),
-                           target_channel_name=target_channel_name)
+                           target_channel_name=target_channel_name,
+                           history=History.get())
 
 
 @graph_bp.route('/collaborations')
@@ -86,8 +87,3 @@ def get_collaboration_videos():
 
     collabs = Collaboration.for_channels(channel_1, channel_2)
     return render_template("video_list.html", collabs=collabs)
-
-
-@graph_bp.route("/history")
-def get_history():
-    return jsonify([h.channel.title for h in History.get()])

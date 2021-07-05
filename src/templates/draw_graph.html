@@ -14,8 +14,8 @@
 
     <!-- General Boostrap CSS / JS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-<!--    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
-<!--    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
     <script>
         // Defining string.format, as it isn't in base JS
@@ -43,10 +43,9 @@
             nodes.selected().stroke("#333333", 3);
 
             chart.title("{{ target_channel_name }}");
-            chart.height("800px");
-            chart.width("800px");
             chart.container("maingraph").draw();
 
+            // Event listener responsible for opening channels on double click
             chart.listen('dblclick', function(e) {
                 var tag = e.domTarget.tag;
                 if (tag && tag.type === 'node') {
@@ -60,43 +59,22 @@
                 }
             });
 
-
-            // Event listener responsible for changing the data in the side panels
+            // Event listener responsible for changing the videos in the side panel
             chart.listen('click', function(e) {
                 var tag = e.domTarget.tag;
-                if (tag) {
-                    console.log(tag);
-                    // Get the channel to open in a separate panel
-                    if (tag.type === 'node') {
-                        var url;
-                        for (var i = 0; i < data.nodes.length; i++) {
-                            if (data.nodes[i].id === tag.id) {
-                                url = data.nodes[i].url;
-                                console.log(url);
-                                break;
-                            }
+                if (tag && tag.type === 'edge') {
+                    for (var i = 0; i < data.edges.length; i++) {
+                        if (data.edges[i].id === tag.id) {
+                            var url = "http://127.0.0.1:5000/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
+                            var str = "<iframe id='collabs' style='height: 900px; width: 100%' src='{0}'></iframe>".format(url);
+                            var Obj = document.getElementById('collabs');
+                            Obj.outerHTML=str;
+                            break;
                         }
                     }
-
-                   // Get the related channels to open the collaborations in a separate panel
-                    if (tag.type === 'edge') {
-                        for (var i = 0; i < data.edges.length; i++) {
-                            if (data.edges[i].id === tag.id) {
-                                var url = "http://127.0.0.1:5000/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
-                                var str = "<iframe id='collabs' style='height: 1000px; width: 100%' src='{0}'></iframe>".format(url);
-                                var Obj = document.getElementById('collabs');
-                                Obj.outerHTML=str;
-
-                                console.log(data.edges[i].to);
-                                console.log(data.edges[i].from);
-                                console.log(data.edges[i].channels);
-                                break;
-                                }
-                            }
-                        }
-                    }
-                });
-            })
+                }
+            });
+        })
 
 
     </script>
@@ -147,15 +125,28 @@
 
         <!-- Primary graph -->
         <div class="col-lg-6">
-            <div class="row" align="center">
-                <form action="/" method="get">
-                    <input type="text" placeholder="Your Channel Here" name="channel">
-                    <input type="submit" value="Search"> or <a href="http://127.0.0.1:5000/history" >choose from previous examples</a>
-                </form>
+            <div class="row">
+                <div class="row">
+                    <form action="/" method="get">
+                        <input type="text" placeholder="Your Channel Here" name="channel">
+                        <input type="submit" value="Search"> or
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Select from popular channels
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                {% for i in history %}
+                                    <a href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p></a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="row">
-                <div id="maingraph" style="height: 800px">
-            </div>
+                <div id="maingraph" style="height: 800px; border-style: solid;">
+                </div>
             </div>
         </div>
 
