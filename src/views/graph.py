@@ -70,5 +70,6 @@ def generate_collaboration_graph():
         collabs_json = json.loads(collab_file.read())
 
     return render_template('draw_graph.html',
-                           collab_data=collabs_json,
+                           collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x:x['id'] ),
+                                        'edges': sorted(collabs_json['edges'], key=lambda x:x['id'])},
                            node_size=1000 / len(collabs_json['nodes']))
