@@ -13,6 +13,7 @@
         padding: 0;
       }
 
+
     </style>
     <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-core.min.js"></script>
     <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-graph.min.js"></script>
@@ -20,13 +21,11 @@
 
     <script>
         anychart.onDocumentReady(function () {
-            var data = {{ collab_data|tojson }};
+            data = {{ collab_data|tojson }};
             var chart = anychart.graph(data);
 
-            // access nodes
-            var nodes = chart.nodes();
-
             // set the size of nodes
+            var nodes = chart.nodes();
             nodes.normal().height({{ node_size }});
             nodes.hovered().height({{ node_size }});
             nodes.selected().height({{ node_size }} * 2);
@@ -36,12 +35,49 @@
             nodes.hovered().stroke("#333333", 3);
             nodes.selected().stroke("#333333", 3);
 
-            chart.title("Graph of Wrath");
+            chart.title("Six Degrees of Youtube");
             chart.container("container").draw();
-        })
+
+            // Event listener responsible for changing the data in the side panels
+            chart.listen('click', function(e) {
+                var tag = e.domTarget.tag;
+                if (tag) {
+                    console.log(tag);
+                    // Get the channel to open in a separate panel
+                    if (tag.type === 'node') {
+                        var url;
+                        for (var i = 0; i < data.nodes.length; i++) {
+                            if (data.nodes[i].id === tag.id) {
+                                url = data.nodes[i].url;
+                                console.log(url);
+                                break;
+                            }
+                        }
+                    }
+
+                   // Get the related channels to open the collaborations in a separate panel
+                    if (tag.type === 'edge') {
+                        for (var i = 0; i < data.edges.length; i++) {
+                                if (data.edges[i].id === tag.id) {
+                                    console.log(data.edges[i].to);
+                                    console.log(data.edges[i].from);
+                                    console.log(data.edges[i].channels);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+
     </script>
 </head>
 <body>
 <div id="container"></div>
+
+<!-- in this div data from chart will be placed -->
+<div id="pointClickLog">
+    <b>Point Click</b>
+</div>
 </body>
 </html>
