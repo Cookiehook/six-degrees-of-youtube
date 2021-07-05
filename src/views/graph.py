@@ -9,11 +9,11 @@ from src.extensions import db
 graph_bp = Blueprint('graph', __name__)
 
 
-@graph_bp.route('/graph')
+@graph_bp.route('/')
 def generate_collaboration_graph():
     target_channel_name = request.args.get('channel')
-    if not target_channel_name:
-        return "Target channel required in querystring", 400
+    if not target_channel_name:  # Default for when users load the page
+        target_channel_name = 'Violet Orlandi'
     # with current_app.app_context():
     #     db.session.remove()
     #     db.engine.dispose()
@@ -63,7 +63,7 @@ def generate_collaboration_graph():
     #         edge_id += 1
     #
     # collabs_json = {
-    #     "nodes": [{"id": k, "url": f"www.youtube.com/channel/{v['id']}", "fill": {"src": v["fill"]}} for k, v in nodes.items()],
+    #     "nodes": [{"id": k, "url": f"https://www.youtube.com/channel/{v['id']}", "fill": {"src": v["fill"]}} for k, v in nodes.items()],
     #     "edges": edges
     # }
     with open(os.path.join('data', 'violet_collabs.json'), 'r') as collab_file:
@@ -72,4 +72,5 @@ def generate_collaboration_graph():
     return render_template('draw_graph.html',
                            collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x:x['id'] ),
                                         'edges': sorted(collabs_json['edges'], key=lambda x:x['id'])},
-                           node_size=1000 / len(collabs_json['nodes']))
+                           node_size=1000 / len(collabs_json['nodes']),
+                           target_channel_name=target_channel_name)
