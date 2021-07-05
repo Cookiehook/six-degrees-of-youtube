@@ -13,21 +13,22 @@ class TestVideo(TestYoutube):
         super(TestVideo, self).setUp()
         self.published_timestamp = datetime.datetime(1970, 1, 1)
         self.default_video = Video('default_id', 'default_channel_id', 'default_title',
-                                   'default_description', self.published_timestamp)
+                                   'default_description', 'default_thumbnail', self.published_timestamp)
 
     @patch('src.models.video.db')
     def test_video_saved_default(self, db):
-        video = Video('id', 'channel_id', 'title', 'description', self.published_timestamp)
+        video = Video('id', 'channel_id', 'title', 'description', 'thumbnail', self.published_timestamp)
         assert video.id == 'id'
         assert video.channel_id == 'channel_id'
         assert video.title == 'title'
         assert video.description == 'description'
+        assert video.thumbnail == 'thumbnail'
         assert video.published_at == self.published_timestamp
         assert db.method_calls[0] == call.session.add(video)
 
     @patch('src.models.video.db')
     def test_video_not_saved(self, db):
-        Video('video_id', 'channel_id', 'title', 'description', self.published_timestamp, False)
+        Video('video_id', 'channel_id', 'title', 'description', 'thumbnail', self.published_timestamp, False)
         assert db.method_calls == []
 
     def test_repr(self):
@@ -49,6 +50,7 @@ class TestVideo(TestYoutube):
                 "channelId": "api_channel_id",
                 "title": "api_title",
                 "description": "api_description",
+                "thumbnails": {"medium": {"url": "thumb"}},
                 "publishedAt": "2020-01-01T06:30:45Z"
             }
         }]
@@ -156,33 +158,6 @@ class TestVideo(TestYoutube):
         urls = self.default_video.get_video_ids_from_description()
         assert urls == set()
 
-    def test_replace_bitly_links(self):
-        description = """
-        Collaborated with http://bit.ly/2usJ3lq
-        Go see my producer's vlogs at http://bit.ly/2usJ3lq for future updates
-        Check out my second channel http://bit.ly/2usJ3lq"""
-        self.default_video.description = description
-
-        def response_callback(resp):
-            resp.url = "https://youtube.com/channel/1234567890"
-            return resp
-
-        with responses.RequestsMock(response_callback=response_callback) as m:
-            m.add(responses.GET, 'http://bit.ly/2usJ3lq')
-            self.default_video.resolve_bitly_links()
-            assert self.default_video.description.endswith(
-                ' https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890  https://youtube.com/channel/1234567890 ')
-
-    @patch('src.models.video.requests')
-    def test_no_bitly_links(self, requests):
-        description = """
-        Halocene covers "Zombie" by  @TheCranberriesVEVO  with a few call backs to the popular
-        @Bad Wolves  rendition + a few new things sprinkled in. Enjoy!
-        """
-        self.default_video.description = description
-        self.default_video.resolve_bitly_links()
-        assert requests.call_count == 0
-
     @responses.activate
     @patch('src.models.video.Video.commit')
     def test_get_from_uploads_new(self, patch_commit):
@@ -195,6 +170,7 @@ class TestVideo(TestYoutube):
                         "channelId": f"channel_id_{i}",
                         "title": f"title_{i}",
                         "description": f"description_{i}",
+                        "thumbnails": {"medium": {"url": "thumb"}},
                         "publishedAt": "2020-01-01T06:30:45Z",
                     }})
             if 'pageToken' not in params:
@@ -224,10 +200,11 @@ class TestVideo(TestYoutube):
                     "channelId": f"channel_id_{i}",
                     "title": f"title_{i}",
                     "description": f"description_{i}",
+                    "thumbnails": {"medium": {"url": "thumb"}},
                     "publishedAt": f"2020-01-01T06:30:0{i}Z",
                 }})
-        Video('id_1', '1', 'title-1', 'description', datetime.datetime.now())
-        Video('id_2', '1', 'title-2', 'description', datetime.datetime.now() + datetime.timedelta(hours=6))
+        Video('id_1', '1', 'title-1', 'description', 'thumbnail', datetime.datetime.now())
+        Video('id_2', '1', 'title-2', 'description', 'thumbnail', datetime.datetime.now() + datetime.timedelta(hours=6))
         channel = MagicMock(id='1', uploads_id='abc123')
         patch_get.return_value = videos, None
         uploads = Video.from_channel(channel)

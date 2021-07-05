@@ -1,0 +1,165 @@
+<!--Generated using tutorial https://www.anychart.com/blog/2020/07/22/network-graph-javascript/-->
+<!--Configuration: https://docs.anychart.com/Basic_Charts/Network_Graph-->
+<!--Other sample charts: https://gojs.net/latest/samples/index.html-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Six Degrees of Youtube</title>
+    <!-- JS required for drawing the graph -->
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-core.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-graph.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/8.8.0/js/anychart-data-adapter.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <!-- General Boostrap CSS / JS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <script>
+        // Defining string.format, as it isn't in base JS
+        if (!String.prototype.format) {
+            String.prototype.format = function(...args) {
+            return this.replace(/(\{\d+\})/g, function(a) {
+                return args[+(a.substr(1, a.length - 2)) || 0];
+                });
+            };
+        }
+
+        anychart.onDocumentReady(function () {
+            data = {{ collab_data|tojson }};
+            var chart = anychart.graph(data);
+
+            // set the size of nodes
+            var nodes = chart.nodes();
+            nodes.normal().height({{ node_size }});
+            nodes.hovered().height({{ node_size }});
+            nodes.selected().height({{ node_size }} * 2);
+
+            // set the stroke of nodes
+            nodes.normal().stroke(null);
+            nodes.hovered().stroke("#333333", 3);
+            nodes.selected().stroke("#333333", 3);
+
+            chart.title("{{ target_channel_name }}");
+            chart.container("maingraph").draw();
+
+            // Event listener responsible for opening channels on double click
+            chart.listen('dblclick', function(e) {
+                var tag = e.domTarget.tag;
+                if (tag && tag.type === 'node') {
+                    for (var i = 0; i < data.nodes.length; i++) {
+                        if (data.nodes[i].id === tag.id) {
+                            var url = data.nodes[i].url;
+                            open(url, "_blank");
+                            return;
+                        }
+                    }
+                }
+            });
+
+            // Event listener responsible for changing the videos in the side panel
+            chart.listen('click', function(e) {
+                var tag = e.domTarget.tag;
+                if (tag && tag.type === 'edge') {
+                    for (var i = 0; i < data.edges.length; i++) {
+                        if (data.edges[i].id === tag.id) {
+                            var url = "/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
+                            var str = "<iframe id='collabs' style='height: 800px; width: 100%' frameBorder='0' src='{0}'></iframe>".format(url);
+                            var Obj = document.getElementById('collabs');
+                            Obj.outerHTML=str;
+                            break;
+                        }
+                    }
+                }
+            });
+        })
+
+
+    </script>
+</head>
+<body>
+
+<div class="container-fluid">
+    <!-- Title Row -->
+    <div class="col-lg-12">
+        <h1>Six Degrees of Youtube</h1>
+    </div>
+
+    <!-- Main contents panel -->
+    <div class="row">
+
+        <!-- Blurb / About the site -->
+        <div class="col-lg-3">
+            <h2>What is this?</h2>
+            <p>
+                Six degrees of Youtube is a project for identifying collaborations between Youtubers. Every icon in the
+                graph is a Youtube channel that has worked with the channel in the centre. The thicker the line
+                between any two channels, the more videos they have collaborated on together.
+            </p>
+            <p>
+                The default graph is the network for the wonderful goth metal singer Violet Orlandi.
+            </p>
+        <h2>How do I use it?</h2>
+            <p>
+                Enter the name of your desired channel, exactly as it appears in Youtube, into the search box, and click
+                Search. Move the graph around by holding the left mouse button and moving the mouse. Zoom in and out with the mouse wheel.
+                To  re-arrange the graph, select channels you wish to move (CTRL+click for multiple channels), then drag to move them.
+            </p>
+            <p>
+                Double click on any channel to open that channel in Youtube.
+                Single click on any line to see the list of videos those two channels have worked on together.
+            </p>
+        <h2>How does it work?</h2>
+            <p>
+                This works by scanning through every video uploaded by the submitted channel. It looks for links to other
+                youtube channels or videos in the title and description, adding them to a list. Then, all videos uploaded
+                by all channels are cross-referenced to find collaborations between any of the channels.
+            </p>
+        <h2>Contact Me</h2>
+            <p>Is this not working for your channel / device? Tweet me <a href="https://twitter.com/CookieHookHacks" target="_blank">@CookieHookHacks</a></p>
+            <p>Want to see the code for yourself? It's available on <a href="https://github.com/Cookiehook/six-degrees-of-youtube" target="_blank">Github</a></p>
+            <p>Running this isn't free. If you've enjoyed, consider throwing a few quid my way on <a href="https://www.ko-fi.com/cookiehook" target="_blank">Ko-Fi</a></p>
+        </div>
+
+        <!-- Primary graph -->
+        <div class="col-lg-6">
+            <div class="row">
+                <form action="/" method="get">
+                    <input type="text" placeholder="Your Channel Here" name="channel">
+                    <input type="submit" value="Search"> or
+                    <div class="dropdown">
+                        <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select from popular channels
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for i in history %}
+                            <a class="dropdown-item" href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="row">
+                {% if message %}
+                <h2 align="center">An error occurred. Oh dear</h2>
+                <p align="center">{{ message }}</p>
+                {% else %}
+                <div id="maingraph" style="height: 800px"></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- List of collaborations -->
+        <div class="col-lg-3" >
+            <h2>Collaborated Videos</h2>
+             <p id='collabs'>Click a collaboration line to list videos here</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

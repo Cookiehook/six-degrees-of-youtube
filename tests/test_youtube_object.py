@@ -4,6 +4,7 @@ from unittest.mock import patch, call
 import responses
 from requests import HTTPError
 
+from src.controllers.exceptions import YoutubeAuthenticationException
 from src.models import youtube_object
 from src.models.youtube_object import YoutubeObject
 
@@ -49,7 +50,7 @@ class TestYoutubeObject(TestCase):
                       json={"err": "mock-authentication-error"},
                       status=403)
 
-        with self.assertRaises(RuntimeError) as err:
+        with self.assertRaises(YoutubeAuthenticationException) as err:
             YoutubeObject.get('mock-endpoint', {"mock_attribute": "mock_value"})
         assert err.exception.args[0] == {"err": "mock-authentication-error"}
 

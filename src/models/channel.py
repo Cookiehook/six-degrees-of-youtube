@@ -14,9 +14,9 @@ logger = logging.getLogger()
 class Channel(YoutubeObject, db.Model):
     """Representation of a Channel as returned from the Youtube 'channels' API endpoint"""
     id = db.Column(db.String, primary_key=True)
-    title = db.Column(db.String, nullable=False)
-    uploads_id = db.Column(db.String, unique=True, nullable=False)
-    thumbnail_url = db.Column(db.String, unique=True, nullable=False)
+    title = db.Column(db.String)
+    uploads_id = db.Column(db.String)
+    thumbnail_url = db.Column(db.String)
     url = db.Column(db.String)
     username = db.Column(db.String)
 

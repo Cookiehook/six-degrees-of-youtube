@@ -4,14 +4,14 @@ import os
 from flask import Flask
 
 from src.extensions import db
-from src.views import view_bp
+from src.views.graph import graph_bp
 
 logging.basicConfig(level=logging.INFO)
 
 
 def create_app():
     app = Flask(__name__)
-    app.register_blueprint(view_bp)
+    app.register_blueprint(graph_bp)
     app.app_context().push()
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

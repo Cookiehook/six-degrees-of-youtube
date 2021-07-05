@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        {% for i in collabs %}
+        <div class="row">
+            <p><a href="https://www.youtube.com/watch?v={{ i.video.id }}" target="_blank"><img src="{{ i.video.thumbnail }}"/></a></p>
+            <h4>{{ i.video.title }}</h4>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

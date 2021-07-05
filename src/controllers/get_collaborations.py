@@ -4,8 +4,10 @@ from multiprocessing import Process
 
 from requests import HTTPError
 
+from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
+from src.models.history import History
 from src.models.search import SearchResult
 from src.models.video import Video
 
@@ -28,17 +30,35 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     logger.info(f"Found target channel '{target_channel}'")
     guest_channels = {target_channel}
     # TODO - Make this multi-threaded too. Maybe scale the whole thing with external lambdas rather than threads?
-    for video in Video.from_channel(target_channel):
-        logger.debug(f"Parsing host video '{video}'")
-        guest_channels.update(get_channels_from_description(video))
-        guest_channels.update(get_channels_from_title(video))
+    try:
+        for video in Video.from_channel(target_channel):
+            logger.debug(f"Parsing host video '{video}'")
+            guest_channels.update(get_channels_from_description(video))
+            guest_channels.update(get_channels_from_title(video))
 
-    videos = get_uploads_for_channels(guest_channels)
-    if videos:
-        processes = distribute_videos(videos)
-        process_threads(processes)
+        videos = get_uploads_for_channels(guest_channels)
+        populate_collaborations(videos)
+        History.add(target_channel)
+        # if videos:
+        #     processes = distribute_videos(videos)
+        #     process_threads(processes)
 
-    return Collaboration.for_channel_ids([c.id for c in guest_channels])
+        # # Re-run the processing of collaborator videos. In most instances, this is bypassed in seconds
+        # # However, if the target channel was previously identified as a collaborator of another, the 2nd order
+        # # collaborations would not have been calculated. This forced them to be re-calculated
+        # collaborators = Collaboration.get_collaborators(target_channel)
+        # videos = get_uploads_for_channels(collaborators)
+        # if videos:
+        #     processes = distribute_videos(videos)
+        #     process_threads(processes)
+    except YoutubeAuthenticationException as e:
+        if len(Video.from_channel(target_channel, cache_only=True)) > 0:
+            logger.warning(f"Encountered authentication error whilst processing channel '{channel_name}' - {e}")
+            logger.warning("Some videos already present, returning collaborations from cache")
+        else:
+            raise
+
+    return Collaboration.for_target_channel(target_channel)
 
 
 def get_target_channel(channel_name: str) -> Channel:
@@ -47,12 +67,15 @@ def get_target_channel(channel_name: str) -> Channel:
 
     :param channel_name: Name of channel, as seen on Youtube webpage
     :return: Channel instance for that channel
-    :raises: RuntimeError if the channel can't be found.
+    :raises: ChannelNotFoundException if the channel can't be found.
     """
-    searches = SearchResult.from_term(channel_name)
-    match = [s for s in searches if s.title == channel_name]
-    if not match:
-        raise RuntimeError(f"Could not find target channel: {channel_name}")
+    try:
+        searches = SearchResult.from_term(channel_name)
+        match = [s for s in searches if s.title == channel_name]
+        if not match:
+            raise ChannelNotFoundException(channel_name)
+    except HTTPError:
+        raise ChannelNotFoundException(channel_name)
     return Channel.from_id(match[0].id)
 
 
@@ -152,7 +175,7 @@ def get_uploads_for_channels(channels: set) -> list:
     """
     Retrieve list of all videos uploaded by a list of channels
 
-    :param channels: list of Channel objects
+    :param channels: set of Channel objects
     :return: list of Video objects for all channels
     """
     videos = []

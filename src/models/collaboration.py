@@ -15,9 +15,9 @@ class Collaboration(db.Model):
     channel_1_id = db.Column(db.String, db.ForeignKey('channel.id'))
     channel_2_id = db.Column(db.String, db.ForeignKey('channel.id'))
     video_id = db.Column(db.String, db.ForeignKey('video.id'))
-    channel_1 = relationship("Channel", foreign_keys=[channel_1_id])
-    channel_2 = relationship("Channel", foreign_keys=[channel_2_id])
-    video = relationship("Video", backref="collaboration")
+    channel_1 = relationship("Channel", foreign_keys=[channel_1_id], lazy='subquery')
+    channel_2 = relationship("Channel", foreign_keys=[channel_2_id], lazy='subquery')
+    video = relationship("Video", backref="collaboration", lazy='subquery')
 
     def __init__(self, channel_1: Channel, channel_2: Channel, video: Video):
         self.channel_1 = channel_1
@@ -34,12 +34,45 @@ class Collaboration(db.Model):
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
-    @classmethod
-    def for_channel_ids(cls, channel_ids: list) -> list:
-        """
-        Return all collaboration objects where both channel IDs are in the provided list.
+    def __eq__(self, other):
+        if {self.channel_1, self.channel_2} == {other.channel_1, other.channel_2}:
+            return True
+        return False
 
-        :param channel_ids: list of channel IDs to filter by.
+    def __hash__(self):
+        c1 = self.channel_1_id if self.channel_1_id > self.channel_2_id else self.channel_2_id
+        c2 = self.channel_1_id if self.channel_1_id < self.channel_2_id else self.channel_2_id
+        return hash((c1, c2))
+
+    @classmethod
+    def get_collaborators(cls, target_channel: Channel) -> set:
+        """
+        Get all channels that have appeared in the given channel's videos
+
+        :param target_channel: Channel instance for the target channel
+        :return: list of Channel instances for collaborating partners
+        """
+        return set([c.channel_2 for c in cls.query.filter_by(channel_1_id=target_channel.id)] + [target_channel])
+
+    @classmethod
+    def for_target_channel(cls, target_channel) -> list:
+        """
+        Return all collaborations involving the host channel and any of the host's collaborators
+
+        :param target_channel: Channel object for target channel
         :return: list of matching Collaboration objects.
         """
-        return cls.query.filter(and_(cls.channel_1_id.in_(channel_ids), cls.channel_2_id.in_(channel_ids))).all()
+        partners = [c.id for c in cls.get_collaborators(target_channel)]
+        return cls.query.filter(and_(cls.channel_1_id.in_(partners), cls.channel_2_id.in_(partners))).all()
+
+    @classmethod
+    def for_channels(cls, channel_1: str, channel_2: str) -> list:
+        """
+        Return all collaborations involving both channel IDs
+
+        channel_1: ID of first channel to search for
+        channel_2: ID of second channel to search for
+        """
+        query_1 = cls.query.filter(and_(cls.channel_1_id == channel_1, cls.channel_2_id == channel_2)).all()
+        query_2 = cls.query.filter(and_(cls.channel_1_id == channel_2, cls.channel_2_id == channel_1)).all()
+        return sorted(query_1 + query_2, key=lambda c: c.video.published_at, reverse=True)
