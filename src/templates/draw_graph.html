@@ -65,8 +65,8 @@
                 if (tag && tag.type === 'edge') {
                     for (var i = 0; i < data.edges.length; i++) {
                         if (data.edges[i].id === tag.id) {
-                            var url = "http://127.0.0.1:5000/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
-                            var str = "<iframe id='collabs' style='height: 900px; width: 100%' src='{0}'></iframe>".format(url);
+                            var url = "/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
+                            var str = "<iframe id='collabs' style='height: 800px; width: 100%' frameBorder='0' src='{0}'></iframe>".format(url);
                             var Obj = document.getElementById('collabs');
                             Obj.outerHTML=str;
                             break;
@@ -126,27 +126,30 @@
         <!-- Primary graph -->
         <div class="col-lg-6">
             <div class="row">
-                <div class="row">
-                    <form action="/" method="get">
-                        <input type="text" placeholder="Your Channel Here" name="channel">
-                        <input type="submit" value="Search"> or
-                        <div class="dropdown">
-                            <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Select from popular channels
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                {% for i in history %}
-                                    <a href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p></a>
-                                {% endfor %}
-                            </div>
+                <form action="/" method="get">
+                    <input type="text" placeholder="Your Channel Here" name="channel">
+                    <input type="submit" value="Search"> or
+                    <div class="dropdown">
+                        <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select from popular channels
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for i in history %}
+                            <a class="dropdown-item" href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p>
+                            </a>
+                            {% endfor %}
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
             <div class="row">
-                <div id="maingraph" style="height: 800px; border-style: solid;">
-                </div>
+                {% if message %}
+                <h2 align="center">An error occurred. Oh dear</h2>
+                <p align="center">{{ message }}</p>
+                {% else %}
+                <div id="maingraph" style="height: 800px"></div>
+                {% endif %}
             </div>
         </div>
 

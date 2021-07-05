@@ -5,6 +5,8 @@ from copy import copy
 import requests
 from requests import HTTPError
 
+from src.controllers.exceptions import YoutubeAuthenticationException
+
 logger = logging.getLogger()
 api_keys = os.getenv('YOUTUBE_API_KEYS', '').split(',')
 
@@ -21,7 +23,7 @@ class YoutubeObject:
         :param params: Dictionary of parameters to send as a querystring
         :return: tuple of API items (dict) and pagination token (str)
         :raises: HTTPError if the API responds with non-20x response, or no items
-        :raises: RuntimeError if an unrecoverable authentication error occurs
+        :raises: YoutubeAuthenticationException if an unrecoverable authentication error occurs
         """
 
         logger.debug(f"Querying API with: '{endpoint}' - '{params}")
@@ -39,7 +41,7 @@ class YoutubeObject:
 
         # Unrecoverable errors. Raised for calling methods to handle
         if response.status_code == 403:
-            raise RuntimeError(response.json())
+            raise YoutubeAuthenticationException(response.json())
         elif response.status_code < 200 or response.status_code >= 400:
             raise HTTPError(response.json())
         if 'items' not in response.json() or len(response.json()['items']) == 0:

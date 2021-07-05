@@ -4,6 +4,7 @@ from unittest.mock import patch, call, MagicMock
 from requests import HTTPError
 
 from src.controllers import get_collaborations
+from src.controllers.exceptions import ChannelNotFoundException
 from src.models.channel import Channel
 from src.models.search import SearchResult
 from src.models.video import Video
@@ -38,9 +39,9 @@ class TestGetEntrypoint(TestYoutube):
             SearchResult('3', 'title_3', search_term),
         ]
         from_term.return_value = search_results
-        with self.assertRaises(RuntimeError) as err:
+        with self.assertRaises(ChannelNotFoundException) as err:
             get_collaborations.get_target_channel(search_term)
-        assert err.exception.args[0] == 'Could not find target channel: Violet Orlandi'
+        assert err.exception.args[0] == 'Violet Orlandi'
 
     @patch('src.controllers.get_collaborations.logger.error')
     @patch('src.controllers.get_collaborations.Channel')

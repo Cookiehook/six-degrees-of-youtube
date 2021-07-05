@@ -72,12 +72,13 @@ class Video(YoutubeObject, db.Model):
                    )
 
     @classmethod
-    def from_channel(cls, channel: Channel):
+    def from_channel(cls, channel: Channel, cache_only=False):
         """
         Queries the Youtube API and retrieves a list of videos uploaded by that Channel.
         If the channel has previously been cached, then only newer unprocessed videos are returned.
 
         :param channel: Channel to retrieve uploads for
+        :param cache_only: Default False. If true, only queries the database for videos
         :return: list of unprocessed videos
         """
         params = {
@@ -86,6 +87,9 @@ class Video(YoutubeObject, db.Model):
             'maxResults': 50
         }
         cached_videos = cls.query.filter_by(channel_id=channel.id).order_by(cls.published_at.desc()).all()
+        if cache_only:
+            return cached_videos
+
         unprocessed_videos = cls.query.filter_by(channel_id=channel.id, processed=False).order_by(cls.published_at.desc()).all()
         ids = [v.id for v in cached_videos]
         latest_video = cached_videos[0] if cached_videos else None
