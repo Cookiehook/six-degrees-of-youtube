@@ -13,21 +13,22 @@ class TestVideo(TestYoutube):
         super(TestVideo, self).setUp()
         self.published_timestamp = datetime.datetime(1970, 1, 1)
         self.default_video = Video('default_id', 'default_channel_id', 'default_title',
-                                   'default_description', self.published_timestamp)
+                                   'default_description', 'default_thumbnail', self.published_timestamp)
 
     @patch('src.models.video.db')
     def test_video_saved_default(self, db):
-        video = Video('id', 'channel_id', 'title', 'description', self.published_timestamp)
+        video = Video('id', 'channel_id', 'title', 'description', 'thumbnail', self.published_timestamp)
         assert video.id == 'id'
         assert video.channel_id == 'channel_id'
         assert video.title == 'title'
         assert video.description == 'description'
+        assert video.thumbnail == 'thumbnail'
         assert video.published_at == self.published_timestamp
         assert db.method_calls[0] == call.session.add(video)
 
     @patch('src.models.video.db')
     def test_video_not_saved(self, db):
-        Video('video_id', 'channel_id', 'title', 'description', self.published_timestamp, False)
+        Video('video_id', 'channel_id', 'title', 'description', 'thumbnail', self.published_timestamp, False)
         assert db.method_calls == []
 
     def test_repr(self):
@@ -49,6 +50,7 @@ class TestVideo(TestYoutube):
                 "channelId": "api_channel_id",
                 "title": "api_title",
                 "description": "api_description",
+                "thumbnails": [{"medium": {"url": "thumb"}}],
                 "publishedAt": "2020-01-01T06:30:45Z"
             }
         }]
@@ -168,6 +170,7 @@ class TestVideo(TestYoutube):
                         "channelId": f"channel_id_{i}",
                         "title": f"title_{i}",
                         "description": f"description_{i}",
+                        "thumbnails": [{"medium": {"url": "thumb"}}],
                         "publishedAt": "2020-01-01T06:30:45Z",
                     }})
             if 'pageToken' not in params:
@@ -197,10 +200,11 @@ class TestVideo(TestYoutube):
                     "channelId": f"channel_id_{i}",
                     "title": f"title_{i}",
                     "description": f"description_{i}",
+                    "thumbnails": [{"medium": {"url": "thumb"}}],
                     "publishedAt": f"2020-01-01T06:30:0{i}Z",
                 }})
-        Video('id_1', '1', 'title-1', 'description', datetime.datetime.now())
-        Video('id_2', '1', 'title-2', 'description', datetime.datetime.now() + datetime.timedelta(hours=6))
+        Video('id_1', '1', 'title-1', 'description', 'thumbnail', datetime.datetime.now())
+        Video('id_2', '1', 'title-2', 'description', 'thumbnail', datetime.datetime.now() + datetime.timedelta(hours=6))
         channel = MagicMock(id='1', uploads_id='abc123')
         patch_get.return_value = videos, None
         uploads = Video.from_channel(channel)

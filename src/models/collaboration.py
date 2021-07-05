@@ -64,3 +64,15 @@ class Collaboration(db.Model):
         """
         partners = [c.id for c in cls.get_collaborators(target_channel)]
         return cls.query.filter(and_(cls.channel_1_id.in_(partners), cls.channel_2_id.in_(partners))).all()
+
+    @classmethod
+    def for_channels(cls, channel_1: str, channel_2: str) -> list:
+        """
+        Return all collaborations involving both channel IDs
+
+        channel_1: ID of first channel to search for
+        channel_2: ID of second channel to search for
+        """
+        query_1 = cls.query.filter(and_(cls.channel_1_id == channel_1, cls.channel_2_id == channel_2)).all()
+        query_2 = cls.query.filter(and_(cls.channel_1_id == channel_2, cls.channel_2_id == channel_1)).all()
+        return sorted(query_1 + query_2, key=lambda c: c.video.published_at, reverse=True)

@@ -18,6 +18,15 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
     <script>
+        // Defining string.format, as it isn't in base JS
+        if (!String.prototype.format) {
+            String.prototype.format = function(...args) {
+            return this.replace(/(\{\d+\})/g, function(a) {
+                return args[+(a.substr(1, a.length - 2)) || 0];
+                });
+            };
+        }
+
         anychart.onDocumentReady(function () {
             data = {{ collab_data|tojson }};
             var chart = anychart.graph(data);
@@ -72,11 +81,16 @@
                    // Get the related channels to open the collaborations in a separate panel
                     if (tag.type === 'edge') {
                         for (var i = 0; i < data.edges.length; i++) {
-                                if (data.edges[i].id === tag.id) {
-                                    console.log(data.edges[i].to);
-                                    console.log(data.edges[i].from);
-                                    console.log(data.edges[i].channels);
-                                    break;
+                            if (data.edges[i].id === tag.id) {
+                                var url = "http://127.0.0.1:5000/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
+                                var str = "<iframe id='collabs' style='height: 1000px; width: 100%' src='{0}'></iframe>".format(url);
+                                var Obj = document.getElementById('collabs');
+                                Obj.outerHTML=str;
+
+                                console.log(data.edges[i].to);
+                                console.log(data.edges[i].from);
+                                console.log(data.edges[i].channels);
+                                break;
                                 }
                             }
                         }
@@ -133,10 +147,10 @@
 
         <!-- Primary graph -->
         <div class="col-lg-6">
-            <div class="row">
+            <div class="row" align="center">
                 <form action="/" method="get">
-                    <input type="text" name="channel">
-                    <input type="submit" value="Search">
+                    <input type="text" placeholder="Your Channel Here" name="channel">
+                    <input type="submit" value="Search"> or <a href="http://127.0.0.1:5000/history" >choose from previous examples</a>
                 </form>
             </div>
             <div class="row">
@@ -146,8 +160,9 @@
         </div>
 
         <!-- List of collaborations -->
-        <div class="col-lg-3">
+        <div class="col-lg-3" >
             <h2>Collaborated Videos</h2>
+             <iframe id='collabs' style="height: 1000px; width: 100%" src="http://127.0.0.1:5000/collaborations?c1=UCo3AxjxePfj6DHn03aiIhww&c2=UCoimajyGy33X_Pqt-SHCWeA"></iframe>
         </div>
     </div>
 </div>

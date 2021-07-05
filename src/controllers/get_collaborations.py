@@ -6,6 +6,7 @@ from requests import HTTPError
 
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
+from src.models.history import History
 from src.models.search import SearchResult
 from src.models.video import Video
 
@@ -35,6 +36,7 @@ def get_collaborations_for_channel(channel_name: str) -> list:
 
     videos = get_uploads_for_channels(guest_channels)
     populate_collaborations(videos)
+    History.add(target_channel)
     # if videos:
     #     processes = distribute_videos(videos)
     #     process_threads(processes)

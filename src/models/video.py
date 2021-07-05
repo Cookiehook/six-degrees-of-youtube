@@ -15,15 +15,17 @@ class Video(YoutubeObject, db.Model):
     channel_id = db.Column(db.String, nullable=False)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
+    thumbnail = db.Column(db.String, nullable=False)
     published_at = db.Column(db.DateTime, nullable=False)
     processed = db.Column(db.Boolean, nullable=False)
 
-    def __init__(self, id: str, channel_id: str, title: str, description: str,
+    def __init__(self, id: str, channel_id: str, title: str, description: str, thumbnail: str,
                  published_at: datetime.datetime, save: bool = True):
         self.id = id
         self.channel_id = channel_id
         self.title = title
         self.description = description
+        self.thumbnail = thumbnail
         self.published_at = published_at
         self.processed = False
 
@@ -64,6 +66,7 @@ class Video(YoutubeObject, db.Model):
                    videos[0]['snippet']['channelId'],
                    videos[0]['snippet']['title'],
                    videos[0]['snippet']['description'],
+                   videos[0]['snippet']['thumbnails']['medium']['url'],
                    datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
                    False
                    )
@@ -104,6 +107,7 @@ class Video(YoutubeObject, db.Model):
                                               new_video['snippet']['channelId'],
                                               new_video['snippet']['title'],
                                               new_video['snippet']['description'],
+                                              new_video['snippet']['thumbnails']['medium']['url'],
                                               datetime.datetime.strptime(new_video['snippet']['publishedAt'],
                                                                          '%Y-%m-%dT%H:%M:%SZ')))
             if next_page is None:
