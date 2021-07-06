@@ -17,7 +17,7 @@ class Video(YoutubeObject, db.Model):
     description = db.Column(db.String, nullable=False)
     thumbnail = db.Column(db.String, nullable=False)
     published_at = db.Column(db.DateTime, nullable=False)
-    processed = db.Column(db.Boolean, nullable=False)
+    processed_for = db.Column(db.String)
 
     def __init__(self, id: str, channel_id: str, title: str, description: str, thumbnail: str,
                  published_at: datetime.datetime, save: bool = True):
@@ -27,7 +27,7 @@ class Video(YoutubeObject, db.Model):
         self.description = description
         self.thumbnail = thumbnail
         self.published_at = published_at
-        self.processed = False
+        self.processed_for = ''
 
         if save:
             db.session.add(self)
@@ -90,7 +90,13 @@ class Video(YoutubeObject, db.Model):
         if cache_only:
             return cached_videos
 
-        unprocessed_videos = cls.query.filter_by(channel_id=channel.id, processed=False).order_by(cls.published_at.desc()).all()
+        # Only omit processed videos if the channel has been successfully processed before.
+        # This stops collaborations being missed if a previous processed halted due to error.
+        if channel.processed:
+            unprocessed_videos = cls.query.filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id)).order_by(cls.published_at.desc()).all()
+        else:
+            unprocessed_videos = cached_videos
+
         ids = [v.id for v in cached_videos]
         latest_video = cached_videos[0] if cached_videos else None
         playlist_content, next_page = cls.get('playlistItems', params)

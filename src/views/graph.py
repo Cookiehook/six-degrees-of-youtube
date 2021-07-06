@@ -1,4 +1,6 @@
 import logging
+import traceback
+import statistics
 
 from flask import Blueprint, current_app, request, render_template
 
@@ -33,16 +35,17 @@ def generate_collaboration_graph():
                 message = "This channel has no collaborations"
         except ChannelNotFoundException:
             message = f"Couldn't find channel named '{target_channel_name}'\n" \
-                      f"Please check that the spelling and case is correct and try again"
+                      f"Please check that the spelling and case is correct and try again."
         except YoutubeAuthenticationException as e:
             logger.error(f"Encountered authentication error: - {e}")
-            message = "The application has encountered an issue with the Youtube API.\n" \
-                      "Meanwhile, try a cached result using the popular channels button"
+            message = "<p>The application has encountered an issue with the Youtube API</p>" \
+                      "<p>Meanwhile, try a cached result using the popular channels button</p>"
         except Exception as e:
             logger.error(f"Failed to process collaborations for {target_channel_name} - {e}")
-            message = "The application has encountered an issue it didn't expect.\n" \
-                      "Please contact CookieHookHacks via twitter. " \
-                      "Meanwhile, try a cached result using the popular channels button"
+            traceback.print_exc()
+            message = "<p>The application has encountered an issue it didn't expect</p>" \
+                      "<p>Please contact CookieHookHacks via twitter</p>" \
+                      "<p>Meanwhile, try a cached result using the popular channels button</p>"
 
     return render_template('draw_graph.html',
                            collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x: x['id']),
@@ -60,8 +63,9 @@ def get_collaboration_videos():
     if not channel_1 or not channel_2:
         return "c1 and c2 querystring must be set and by valid channel IDs", 400
 
-    collabs = Collaboration.for_channels(channel_1, channel_2)
-    return render_template("video_list.html", collabs=collabs)
+    # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
+    videos = {c.video for c in Collaboration.for_channels(channel_1, channel_2)}
+    return render_template("video_list.html", videos=videos)
 
 
 def build_anygraph_json(collabs):
@@ -76,7 +80,15 @@ def build_anygraph_json(collabs):
             pairs[collab] = pairs[collab] + 1
         else:
             pairs[collab] = 1
+
+    # Remove the most aggressive deviations, so we don't end up with whisker thin lines for single collabs
+    index = -1
+    std_dev = statistics.stdev(sorted(pairs.values()))
     range = sorted(pairs.values())[-1] - sorted(pairs.values())[0]
+    while std_dev > 50:
+        index -= 1
+        std_dev = statistics.stdev(sorted(pairs.values())[:index])
+        range = sorted(pairs.values())[index] - sorted(pairs.values())[0]
 
     edge_id = 1
     for collab, strength in pairs.items():

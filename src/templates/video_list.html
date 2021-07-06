@@ -6,10 +6,10 @@
 </head>
 <body>
     <div class="container">
-        {% for i in collabs %}
+        {% for v in videos %}
         <div class="row">
-            <p><a href="https://www.youtube.com/watch?v={{ i.video.id }}" target="_blank"><img src="{{ i.video.thumbnail }}"/></a></p>
-            <h4>{{ i.video.title }}</h4>
+            <p><a href="https://www.youtube.com/watch?v={{ v.id }}" target="_blank"><img src="{{ v.thumbnail }}"/></a></p>
+            <h4>{{ v.title }}</h4>
         </div>
         {% endfor %}
     </div>

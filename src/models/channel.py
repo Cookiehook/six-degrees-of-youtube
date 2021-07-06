@@ -19,6 +19,7 @@ class Channel(YoutubeObject, db.Model):
     thumbnail_url = db.Column(db.String)
     url = db.Column(db.String)
     username = db.Column(db.String)
+    processed = db.Column(db.Boolean)
 
     def __init__(self, id: str, title: str, uploads_id: str, thumbnail_url: str, url: str, username: str = ''):
         self.id = id
@@ -27,12 +28,19 @@ class Channel(YoutubeObject, db.Model):
         self.thumbnail_url = thumbnail_url
         self.url = url.lower()
         self.username = username.lower()
+        self.processed = False
 
         db.session.add(self)
         db.session.commit()
 
     def __repr__(self):
         return self.title
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
 
     @classmethod
     def from_title(cls, title: str):
@@ -122,7 +130,7 @@ class Channel(YoutubeObject, db.Model):
             return cls.from_username(UrlLookup.get_resolved(url))
         else:
             url = UrlLookup.get_resolved(url) or url
-            if cached := cls.query.filter_by(url=url).first():
+            if cached := cls.query.filter_by(url=url.lower()).first():
                 return cached
         if cache_only:
             return

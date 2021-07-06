@@ -146,7 +146,7 @@
             <div class="row">
                 {% if message %}
                 <h2 align="center">An error occurred. Oh dear</h2>
-                <p align="center">{{ message }}</p>
+                <p align="center">{{ message|safe }}</p>
                 {% else %}
                 <div id="maingraph" style="height: 800px"></div>
                 {% endif %}

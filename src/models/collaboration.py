@@ -28,21 +28,20 @@ class Collaboration(db.Model):
         self.channel_2.id = self.channel_2.id
         self.video.id = self.video.id
 
-        db.session.add(self)
-        db.session.commit()
-
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
     def __eq__(self, other):
-        if {self.channel_1, self.channel_2} == {other.channel_1, other.channel_2}:
-            return True
-        return False
+        return {self.channel_1, self.channel_2} == {other.channel_1, other.channel_2}
 
     def __hash__(self):
         c1 = self.channel_1_id if self.channel_1_id > self.channel_2_id else self.channel_2_id
         c2 = self.channel_1_id if self.channel_1_id < self.channel_2_id else self.channel_2_id
         return hash((c1, c2))
+
+    def commit(self):
+        db.session.add(self)
+        db.session.commit()
 
     @classmethod
     def get_collaborators(cls, target_channel: Channel) -> set:
@@ -76,3 +75,7 @@ class Collaboration(db.Model):
         query_1 = cls.query.filter(and_(cls.channel_1_id == channel_1, cls.channel_2_id == channel_2)).all()
         query_2 = cls.query.filter(and_(cls.channel_1_id == channel_2, cls.channel_2_id == channel_1)).all()
         return sorted(query_1 + query_2, key=lambda c: c.video.published_at, reverse=True)
+
+    @classmethod
+    def for_video(cls, video):
+        return cls.query.filter(cls.video_id == video.id).all()
