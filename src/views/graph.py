@@ -20,8 +20,8 @@ def generate_collaboration_graph():
     if not target_channel_name:  # Default for when users load the page
         target_channel_name = 'Violet Orlandi'
     with current_app.app_context():
-        db.session.remove()
-        db.engine.dispose()
+        # db.session.remove()
+        # db.engine.dispose()
         collabs_json = {"nodes": [], "edges": []}
         node_size = 1
         message = None
@@ -52,7 +52,7 @@ def generate_collaboration_graph():
                                         'edges': sorted(collabs_json['edges'], key=lambda x: x['id'])},
                            node_size=node_size,
                            target_channel_name=target_channel_name,
-                           history=History.get(),
+                           # history=History.get(),
                            message=message)
 
 

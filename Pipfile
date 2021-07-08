@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+aws_lambda_wsgi = "*"  # WSGI like handle for serverless lambda
 flask = "*"  # Web application framework
 flask_sqlalchemy = "*"  # DB interaction and ORM
 psycopg2-binary = "*"  # Driver for Postgres DB
@@ -17,4 +18,4 @@ responses = "*"  # Stub HTTP responses out to Youtube API
 flake8 = "*"  # Code quality analysis
 
 [requires]
-python_version = "3.9"
+python_version = "3.8"
