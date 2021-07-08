@@ -10,24 +10,39 @@ provider "aws" {
   region = "eu-west-2"
 }
 
-resource "aws_lambda_function" "six-degrees-of-youtube" {
-  function_name = "six-degrees-of-youtube"
-  s3_bucket = var.artifact_bucket
-  s3_key = var.artifact_name
-  role = var.iam_role
-  handler = "src.app.entrypoint"
-  runtime = "python3.8"
+data "aws_security_group" "default" {
+  name = "default"
 }
 
-resource "aws_lambda_permission" "apigw" {
-  statement_id = "AllowAPIGatewayInvoke"
-  action = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.six-degrees-of-youtube.function_name
-  principal = "apigateway.amazonaws.com"
-  # The "/*/*" portion grants access from any method on any resource within the API Gateway REST API.
-  source_arn = "${aws_api_gateway_rest_api.six-degrees-of-youtube.execution_arn}/*/*"
+data "aws_subnet" "eu-west-2a" {
+  filter {
+    name = "tag:Name"
+    values = ["default-eu-west-2a"]
+  }
 }
 
-output "base_url" {
-  value = aws_api_gateway_deployment.six-degrees-of-youtube.invoke_url
+data "aws_subnet" "eu-west-2b" {
+  filter {
+    name = "tag:Name"
+    values = ["default-eu-west-2b"]
+  }
+}
+
+data "aws_subnet" "eu-west-2c" {
+  filter {
+    name = "tag:Name"
+    values = ["default-eu-west-2c"]
+  }
+}
+
+data "aws_acm_certificate" "cookiehook" {
+  domain = "*.cookiehook.com"
+}
+
+data "aws_iam_role" "lambda" {
+  name = "six-degrees-of-youtube-lambda"
+}
+
+data "aws_route53_zone" "cookiehook" {
+  name = "cookiehook.com"
 }

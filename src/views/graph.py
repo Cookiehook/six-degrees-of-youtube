@@ -27,7 +27,7 @@ def generate_collaboration_graph():
         message = None
 
         try:
-            collabs = get_collaborations.get_collaborations_for_channel(target_channel_name)
+            collabs = []  # get_collaborations.get_collaborations_for_channel(target_channel_name)
             if len(collabs) > 0:
                 collabs_json = build_anygraph_json(collabs)
                 node_size = 1000 / len(collabs_json['nodes'])
