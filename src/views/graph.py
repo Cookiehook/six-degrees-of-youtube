@@ -16,18 +16,19 @@ logger = logging.getLogger()
 
 @graph_bp.route('/')
 def generate_collaboration_graph():
+    logger.info("Requested endpoint '/'")
     target_channel_name = request.args.get('channel')
     if not target_channel_name:  # Default for when users load the page
         target_channel_name = 'Violet Orlandi'
     with current_app.app_context():
-        # db.session.remove()
-        # db.engine.dispose()
+        db.session.remove()
+        db.engine.dispose()
         collabs_json = {"nodes": [], "edges": []}
         node_size = 1
         message = None
 
         try:
-            collabs = []  # get_collaborations.get_collaborations_for_channel(target_channel_name)
+            collabs = get_collaborations.get_collaborations_for_channel(target_channel_name)
             if len(collabs) > 0:
                 collabs_json = build_anygraph_json(collabs)
                 node_size = 1000 / len(collabs_json['nodes'])
@@ -52,12 +53,13 @@ def generate_collaboration_graph():
                                         'edges': sorted(collabs_json['edges'], key=lambda x: x['id'])},
                            node_size=node_size,
                            target_channel_name=target_channel_name,
-                           # history=History.get(),
+                           history=History.get(),
                            message=message)
 
 
 @graph_bp.route('/collaborations')
 def get_collaboration_videos():
+    logger.info("Requested endpoint '/collaborations'")
     channel_1 = request.args.get('c1')
     channel_2 = request.args.get('c2')
     if not channel_1 or not channel_2:

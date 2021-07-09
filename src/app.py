@@ -1,13 +1,20 @@
 import logging
-import os
+
+# Remove Lambda's pre-prepared logger handlers and use our own
+root = logging.getLogger()
+if root.handlers:
+    for handler in root.handlers:
+        root.removeHandler(handler)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
+logger.info("Configured logger")
 
 import aws_lambda_wsgi
 from flask import Flask
 
+from src.controllers import secrets
 from src.extensions import db
 from src.views.graph import graph_bp
-
-logging.basicConfig(level=logging.INFO)
 
 
 def create_app():
@@ -15,11 +22,14 @@ def create_app():
     app.register_blueprint(graph_bp)
     app.app_context().push()
 
-    # app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:bob@127.0.0.1:5432')
-    # db.init_app(app)
-    # with app.app_context():
-    #     db.create_all()
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = secrets.get_secret("six-degrees-of-youtube-db-dsn")
+    logger.info("Initialising DB")
+    db.init_app(app)
+    logger.info("Creating DB tables")
+    with app.app_context():
+        db.create_all()
+    logger.info("Finished creating tables")
 
     return app
 

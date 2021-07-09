@@ -5,6 +5,7 @@ from multiprocessing import Process
 from requests import HTTPError
 
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
+from src.extensions import db
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
 from src.models.history import History
@@ -211,6 +212,8 @@ def process_threads(processes: list):
     :param processes: list of process objects
     :return:
     """
+    db.session.remove()
+    db.engine.dispose()
     for process in processes:
         process.start()
     for process in processes:

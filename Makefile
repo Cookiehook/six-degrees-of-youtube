@@ -1,3 +1,5 @@
+.PHONY: deploy
+
 clean:
 	rm -rf .pytest_cache .coverage build
 
@@ -13,8 +15,11 @@ test: clean
 	pipenv run flake8
 	pipenv run pytest --cov src --cov-report term-missing
 
-deploy-prod:
-	TF_WORKSPACE="prod" TF_S3_BUCKET="terraform-workspaces-shaunharrison" deploy/scripts/deploy.sh
+deploy:
+	(cd ./deploy && terraform init && terraform apply)
 
-destroy-prod:
-	TF_WORKSPACE="prod" TF_S3_BUCKET="terraform-workspaces-shaunharrison" deploy/scripts/destroy.sh
+re-deploy:
+	(cd ./deploy && terraform init && terraform apply -replace="null_resource.prepare_archive")
+
+destroy:
+	(cd ./deploy && terraform init && terraform destroy)

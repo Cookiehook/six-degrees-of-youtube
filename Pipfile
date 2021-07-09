@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 aws_lambda_wsgi = "*"  # WSGI like handle for serverless lambda
+boto3 = "*"  # Accessing RDS secrets
 flask = "*"  # Web application framework
 flask_sqlalchemy = "*"  # DB interaction and ORM
 psycopg2-binary = "*"  # Driver for Postgres DB

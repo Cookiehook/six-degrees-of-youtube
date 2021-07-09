@@ -31,11 +31,12 @@ def create_artifact():
         raise RuntimeError("Failed to copy source code into build folder")
 
     # Build archive for upload
-    with zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, dirs, files in os.walk(build_folder):
-            for file in files:
-                z.write(os.path.join(root, file),
-                        os.path.relpath(os.path.join(root, file), os.path.join(build_folder, ".")))
+    if os.getenv("CREATE_ZIP"):
+        with zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED) as z:
+            for root, dirs, files in os.walk(build_folder):
+                for file in files:
+                    z.write(os.path.join(root, file),
+                            os.path.relpath(os.path.join(root, file), os.path.join(build_folder, ".")))
 
 
 if __name__ == "__main__":

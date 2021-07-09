@@ -1,20 +1,23 @@
 resource "aws_alb" "six-degrees-of-youtube" {
-  name = "six-degrees-of-youtube"
+  name                       = "six-degrees-of-youtube"
   drop_invalid_header_fields = "false"
   enable_deletion_protection = "false"
-  enable_http2 = "true"
-  idle_timeout = "60"
-  internal = "false"
-  ip_address_type = "ipv4"
-  load_balancer_type = "application"
+  enable_http2               = "true"
+  idle_timeout               = "60"
+  internal                   = "false"
+  ip_address_type            = "ipv4"
+  load_balancer_type         = "application"
 
   security_groups = [
-    data.aws_security_group.default.id
+    aws_security_group.web-rds.id
   ]
   subnets = [
-    data.aws_subnet.eu-west-2a.id,
-    data.aws_subnet.eu-west-2b.id,
-    data.aws_subnet.eu-west-2c.id,
+    aws_subnet.eu-west-2a-public.id,
+    aws_subnet.eu-west-2a-public.id,
+    aws_subnet.eu-west-2b-public.id,
+    aws_subnet.eu-west-2b-public.id,
+    aws_subnet.eu-west-2c-public.id,
+    aws_subnet.eu-west-2c-public.id,
   ]
 
   tags = {
@@ -74,7 +77,7 @@ resource "aws_lb_target_group" "six-degrees-of-youtube" {
 }
 
 resource "aws_lb_target_group_attachment" "six-degrees-of-youtube" {
-  depends_on = [ aws_lambda_permission.alb ]
+  depends_on       = [ aws_lambda_permission.alb ]
   target_group_arn = aws_lb_target_group.six-degrees-of-youtube.arn
   target_id        = aws_lambda_alias.live.arn
 }
