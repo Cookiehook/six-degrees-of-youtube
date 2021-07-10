@@ -1,11 +1,11 @@
 import logging
-import os
-from multiprocessing import Process
+from multiprocessing import Pool
 
+import requests
+from flask import url_for
 from requests import HTTPError
 
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
-from src.extensions import db
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
 from src.models.history import History
@@ -13,6 +13,10 @@ from src.models.search import SearchResult
 from src.models.video import Video
 
 logger = logging.getLogger()
+
+
+def get_chunks(data, n):
+    return [data[i::n] for i in range(n)]
 
 
 def get_collaborations_for_channel(channel_name: str) -> list:
@@ -29,23 +33,33 @@ def get_collaborations_for_channel(channel_name: str) -> list:
     """
     target_channel = get_target_channel(channel_name)
     logger.info(f"Found target channel '{target_channel}'")
-    guest_channels = {target_channel}
-    # TODO - Make this multi-threaded too. Maybe scale the whole thing with external lambdas rather than threads?
     try:
-        for video in Video.from_channel(target_channel):
-            logger.debug(f"Parsing host video '{video}'")
-            guest_channels.update(get_channels_from_description(video))
-            guest_channels.update(get_channels_from_title(video))
+        # Get list of collaborators present in target channel's uploads (including target channel)
+        host_videos = [v.id for v in Video.from_channel(target_channel)]
 
-        videos = get_uploads_for_channels(guest_channels)
+        if host_videos:
+            parallelism = 40
+            pool = Pool(parallelism)  # Only instantiate pool if there's work to do, as it's expensive
+            guest_channels = {target_channel.id}
+            host_videos_chunks = get_chunks(host_videos, parallelism)
+            starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True), list] for list in host_videos_chunks]
+            for result in pool.starmap(request_guest_channels_for_video, starmap_args):
+                guest_channels.update(result)
 
-        if videos:
-            populate_collaborations(target_channel.id, videos)
-            # processes = distribute_videos(target_channel.id, videos)
-            # process_threads(processes)
-        target_channel.processed = True
+            # Get all videos uploaded by all collaborators (including target channel)
+            all_videos = []
+            starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True), c] for c in guest_channels]
+            for result in pool.starmap(request_videos_for_channel, starmap_args):
+                all_videos.extend(result)
+
+            # Calculate all collaborations between collaborators (including target channel)
+            if all_videos:
+                all_videos_chunks = get_chunks(all_videos, parallelism)
+                starmap_args = [[url_for('graph.process_collaborations', _external=True), target_channel.id, videos] for videos in all_videos_chunks]
+                pool.starmap(request_process_collaborations, starmap_args)
+
+            target_channel.set_processed()
         History.add(target_channel)
-        Video.commit()
     except YoutubeAuthenticationException as e:
         if len(Video.from_channel(target_channel, cache_only=True)) > 0:
             logger.warning(f"Encountered authentication error whilst processing channel '{channel_name}' - {e}")
@@ -54,6 +68,20 @@ def get_collaborations_for_channel(channel_name: str) -> list:
             raise
 
     return Collaboration.for_target_channel(target_channel)
+
+
+def request_videos_for_channel(url, channel_id):
+    resp = requests.post(url, json={'channel': channel_id})
+    return resp.json()['videos']
+
+
+def request_guest_channels_for_video(url, videos):
+    resp = requests.post(url, json={'videos': videos})
+    return resp.json()['channels']
+
+
+def request_process_collaborations(url, target_channel, videos):
+    requests.post(url, json={'videos': videos, 'target_channel': target_channel})
 
 
 def get_target_channel(channel_name: str) -> Channel:
@@ -172,53 +200,15 @@ def get_channels_from_title(video: Video, cache_only=False) -> set:
     return channels
 
 
-def get_uploads_for_channels(channels: set) -> list:
-    """
-    Retrieve list of all videos uploaded by a list of channels
-
-    :param channels: set of Channel objects
-    :return: list of Video objects for all channels
-    """
+def get_uploads_for_channel(channel_id: str) -> list:
     videos = []
-    for channel in channels:
-        logger.info(f"Getting uploads for channel '{channel}'")
-        try:
-            videos.extend([v.id for v in Video.from_channel(channel)])
-        except HTTPError as e:
-            logger.error(f"Processing uploads for channel '{channel}' - '{e}'")
-
+    channel = Channel.from_id(channel_id)
+    logger.info(f"Getting uploads for channel '{channel}'")
+    try:
+        videos.extend([v.id for v in Video.from_channel(channel)])
+    except HTTPError as e:
+        logger.error(f"Processing uploads for channel '{channel}' - '{e}'")
     return videos
-
-
-def distribute_videos(target_channel_id: str, videos: list) -> list:
-    """
-    Split the list of videos into 10 similarly sized groups
-    and create a thread to process each list
-
-    :param videos: list of Video objects
-    :param target_channel_id: Channel ID that relationships are being calculated for
-    :return: list of Process objects
-    """
-
-    processes = []
-    for chunk in [videos[i::10] for i in range(10)]:
-        processes.append(Process(target=populate_collaborations, args=(target_channel_id, chunk)))
-    return processes
-
-
-def process_threads(processes: list):
-    """
-    Start all processes and wait for completion
-
-    :param processes: list of process objects
-    :return:
-    """
-    db.session.remove()
-    db.engine.dispose()
-    for process in processes:
-        process.start()
-    for process in processes:
-        process.join()
 
 
 def populate_collaborations(target_channel_id: str, videos: list):
@@ -231,7 +221,6 @@ def populate_collaborations(target_channel_id: str, videos: list):
     :param target_channel_id: Channel id that relationships are being calculated for.
     """
     target_channel = Channel.from_id(target_channel_id)
-    logger.info(f"Populating collaborations for PID '{os.getpid()}'")
     for video_id in videos:
         video = Video.from_id(video_id)
         logger.debug(f"Populating collaborations for video '{video}'")

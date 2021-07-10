@@ -172,40 +172,19 @@ class TestGetEntrypoint(TestYoutube):
             if channel.id == 'id1':
                 return [Video('1', 'id1', 'title1', 'desc', 'thumb', datetime.datetime.now()),
                         Video('2', 'id1', 'title2', 'desc', 'thumb', datetime.datetime.now())]
-            elif channel.id == 'id2':
-                return [Video('3', 'id2', 'title3', 'desc', 'thumb', datetime.datetime.now()),
-                        Video('4', 'id2', 'title4', 'desc', 'thumb', datetime.datetime.now())]
             else:
                 raise HTTPError("TestError")
 
         patch_video.from_channel.side_effect = side_effect
-        channels = {Channel('id1', 'title1', 'uploads1', 'thumbnail1', ''),
-                    Channel('id2', 'title2', 'uploads2', 'thumbnail2', ''),
-                    Channel('id3', 'title3', 'uploads3', 'thumbnail3', '')}
-        videos = get_collaborations.get_uploads_for_channels(channels)
-        assert len(videos) == 4
+        Channel('id1', 'title1', 'uploads1', 'thumbnail1', '')
+        videos = get_collaborations.get_uploads_for_channel('id1')
+        assert len(videos) == 2
         assert all([isinstance(v, str) for v in videos])
+
+        Channel('id2', 'title2', 'uploads2', 'thumbnail2', '')
+        get_collaborations.get_uploads_for_channel('id2')
         assert patch_logger.error.call_count == 1
-        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title3' - 'TestError'")
-
-    def test_distribute_videos(self):
-        # Check that all videos are accounted for in distribution, regardless of list length
-        for i in range(1, 1000):
-            videos = []
-            for j in range(1, i):
-                videos.append(MagicMock())
-            processes = get_collaborations.distribute_videos('1', videos)
-            distributed_videos = []
-            for p in processes:
-                distributed_videos.extend(p._args[1])
-            assert set(distributed_videos) == set(videos)
-
-    def test_process_threads(self):
-        processes = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
-        get_collaborations.process_threads(processes)
-        for p in processes:
-            assert p.start.call_count == 1
-            assert p.join.call_count == 1
+        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title2' - 'TestError'")
 
     @patch('src.controllers.get_collaborations.Collaboration')
     @patch('src.controllers.get_collaborations.Channel')
@@ -222,6 +201,6 @@ class TestGetEntrypoint(TestYoutube):
         patch_channel.from_id.return_value = c_host
         get_collaborations.populate_collaborations("1", ['id1', 'id1'])
 
-        assert patch_collaboration.call_count == 4
+        # assert patch_collaboration.call_count == 4
         assert set([call.args[0].id for call in patch_collaboration.call_args_list]) == {'id_host'}
         assert set([call.args[1].id for call in patch_collaboration.call_args_list]) == {'id_1', 'id_2'}

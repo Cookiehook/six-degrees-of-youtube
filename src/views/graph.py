@@ -3,13 +3,15 @@ import traceback
 import statistics
 import urllib
 
-from flask import Blueprint, current_app, request, render_template
+from flask import Blueprint, current_app, request, render_template, jsonify
+from sqlalchemy.exc import IntegrityError
 
 from src.controllers import get_collaborations
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
 from src.extensions import db
 from src.models.collaboration import Collaboration
 from src.models.history import History
+from src.models.video import Video
 
 graph_bp = Blueprint('graph', __name__)
 logger = logging.getLogger()
@@ -56,6 +58,41 @@ def generate_collaboration_graph():
                            target_channel_name=target_channel_name,
                            history=History.get(),
                            message=message)
+
+
+@graph_bp.route("/calc/uploads", methods=['POST'])
+def get_uploads_for_channel():
+    channel_id = request.get_json()['channel']
+    videos = get_collaborations.get_uploads_for_channel(channel_id)
+    return jsonify(videos=videos)
+
+
+@graph_bp.route("/calc/parse_videos", methods=['POST'])
+def get_collaborators_for_videos():
+    video_ids = request.get_json()['videos']
+    guest_channels = set()
+    for video_id in video_ids:
+        try:
+            video = Video.from_id(video_id)
+            logger.debug(f"Parsing host video '{video}'")
+            guest_channels.update(get_collaborations.get_channels_from_description(video))
+            guest_channels.update(get_collaborations.get_channels_from_title(video))
+        except IntegrityError as e:
+            # flask-sqlalchemy package uses 1 long-lived database session, so when we go multi-threaded, 2 threads may
+            # have a session in which a channel doesn't exist, both try to write, and the latter raises a unique violation
+            # on the DB. Ignoring this isn't a problem as we're working with sets. The first write is all we need.
+            # The proper fix is to re-work all the DB interaction to use short-lived sessions, but I've been at this for weeks.....
+            logger.error(f"get_collaborators_for_videos - {e}")
+            db.session.rollback()
+    return jsonify(channels=[c.id for c in guest_channels])
+
+
+@graph_bp.route("/calc/process_collaborations", methods=['POST'])
+def process_collaborations():
+    target_channel = request.get_json()['target_channel']
+    video_ids = request.get_json()['videos']
+    get_collaborations.populate_collaborations(target_channel, video_ids)
+    return ''
 
 
 @graph_bp.route('/collaborations')

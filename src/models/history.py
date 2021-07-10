@@ -32,4 +32,4 @@ class History(db.Model):
 
     @classmethod
     def get(cls):
-        return cls.query.order_by(cls.popularity.desc()).all()
+        return cls.query.order_by(cls.popularity.desc()).limit(10).all()

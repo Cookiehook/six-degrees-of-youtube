@@ -42,6 +42,10 @@ class Channel(YoutubeObject, db.Model):
     def __hash__(self):
         return hash(self.id)
 
+    def set_processed(self):
+        self.processed = True
+        db.session.commit()
+
     @classmethod
     def from_title(cls, title: str):
         """
@@ -90,7 +94,7 @@ class Channel(YoutubeObject, db.Model):
         :return: Matching Channel instance or None.
         :raises: AssertionError if more or less than 1 channel is returned from the API
         """
-        if cached := cls.query.filter_by(username=username).first():
+        if cached := cls.query.filter_by(username=username.lower()).first():
             return cached
         if cache_only:
             return
