@@ -17,15 +17,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script>
-        $(document).ready(function(){
-            $('.loading').click(function(){
-                $('#load').show();
-                $('#form').hide();
-            });
-        });
-    </script>
-
-    <script>
         // Defining string.format, as it isn't in base JS
         if (!String.prototype.format) {
             String.prototype.format = function(...args) {
@@ -35,11 +26,10 @@
             };
         }
 
+        data = {{ collab_data|tojson }};
+        var chart = anychart.graph(data);
         anychart.onDocumentReady(function () {
-            data = {{ collab_data|tojson }};
-            var chart = anychart.graph(data);
-
-            // set the size of nodes
+            // Node size is relative to number of nodes, calculated server-side
             var nodes = chart.nodes();
             nodes.normal().height({{ node_size }});
             nodes.hovered().height({{ node_size }});
@@ -50,33 +40,37 @@
             nodes.hovered().stroke("#333333", 3);
             nodes.selected().stroke("#333333", 3);
 
-            chart.title("{{ target_channel_name }}");
+            // Element height must be explicit pixels, or it renders very small
+            document.getElementById("maingraph").style.height = window.innerHeight * 0.8 + "px";
+            chart.title("{{ chart_title|safe }}");
             chart.container("maingraph").draw();
 
-            // Event listener responsible for opening channels on double click
+            // Event listener responsible for calculating new channels on double click
             chart.listen('dblclick', function(e) {
                 var tag = e.domTarget.tag;
                 if (tag && tag.type === 'node') {
                     for (var i = 0; i < data.nodes.length; i++) {
                         if (data.nodes[i].id === tag.id) {
                             var url = data.nodes[i].url;
-                            open(url, "_blank");
+                            $('#load').show();
+                            $('#form').hide();
+                            open(url, "_self");
                             return;
                         }
                     }
                 }
             });
 
-            // Event listener responsible for changing the videos in the side panel
+            // Event listener responsible for changing the channels and videos in the side panel
             chart.listen('click', function(e) {
                 var tag = e.domTarget.tag;
                 if (tag && tag.type === 'edge') {
                     for (var i = 0; i < data.edges.length; i++) {
                         if (data.edges[i].id === tag.id) {
                             var url = "/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
-                            var str = "<iframe id='collabs' style='height: 800px; width: 100%' frameBorder='0' src='{0}'></iframe>".format(url);
-                            var Obj = document.getElementById('collabs');
-                            Obj.outerHTML=str;
+                            var video_html = "<iframe id='videos' style='height: {0}; width: 100%' frameBorder='0' src='{1}'></iframe>".format(window.innerHeight*0.8+"px", url);
+                            var video_target = document.getElementById('videos');
+                            video_target.outerHTML = video_html;
                             break;
                         }
                     }
@@ -84,6 +78,68 @@
             });
         })
 
+        $(document).ready(function(){
+            $('.loading').click(function(){
+                $('#load').show();
+                $('#form').hide();
+            });
+        });
+        $(document).ready(function(){
+            $('#minimise').click(function(){
+                $('.sidepanel').hide();
+                $('#maximise').show();
+                $('#minimise').hide();
+                $('#main-panel').addClass("col-lg-12");
+                $('#main-panel').removeClass("col-lg-6");
+                console.log(chart.rotation(25));
+            });
+        });
+        $(document).ready(function(){
+            $('#maximise').click(function(){
+                $('.sidepanel').show();
+                $('#maximise').hide();
+                $('#minimise').show();
+                $('#main-panel').addClass("col-lg-6");
+                $('#main-panel').removeClass("col-lg-12");
+            });
+        });
+
+        $(document).ready(function(){
+            var slider = document.getElementById("myRange");
+            slider.oninput = function() {
+                chart.rotation(this.value);
+            }
+        });
+
+        $(document).ready(function(){
+            $('#save-as-json').click(function(){
+                chart.saveAsJson();
+            });
+        });
+
+        $(document).ready(function(){
+            $('#save-as-png').click(function(){
+                chart.saveAsPng(1920, 1080, 1, 'Six Degrees of Youtube - {{ chart_title }}');
+            });
+        });
+
+        $(document).ready(function(){
+            $('#save-as-svg').click(function(){
+                chart.saveAsSvg(2048, true, 'Six Degrees of Youtube - {{ chart_title }}');
+            });
+        });
+
+        $(document).ready(function(){
+            $('#fit').click(function(){
+                chart.fit();
+            });
+        });
+
+        // Keep the graph in view when users re-size the window, as it's set in pixels
+        $(window).on('resize', function() {
+            document.getElementById("maingraph").style.height = window.innerHeight * 0.8 + "px";
+            chart.fit();
+        });
 
     </script>
 </head>
@@ -91,15 +147,17 @@
 
 <div class="container-fluid">
     <!-- Title Row -->
-    <div class="col-lg-12">
-        <h1>Six Degrees of Youtube</h1>
+    <div class="row">
+        <div align="center" class="col-lg-12">
+            <h1>Six Degrees of Youtube</h1>
+        </div>
     </div>
 
     <!-- Main contents panel -->
     <div class="row">
 
         <!-- Blurb / About the site -->
-        <div class="col-lg-4">
+        <div class="col-lg-3 sidepanel">
             <h2>What is this?</h2>
             <p>
                 Six degrees of Youtube is a project for identifying collaborations between Youtubers. Every icon in the
@@ -112,11 +170,11 @@
             <h2>How do I use it?</h2>
             <ul>
                 <li>Enter the name of your desired channel into the search box, and click Search</li>
-                <li>Move the graph around by holding the left mouse button and moving the mouse</li>
                 <li>Zoom in and out with the mouse wheel</li>
+                <li>Move the graph around by holding the left mouse button and moving the mouse</li>
                 <li>To re-arrange the graph, select channels you wish to move (CTRL+click for multiple channels), then drag to move them</li>
-                <li>Double click on any channel to open that channel in Youtube.</li>
-                <li>Single click on any line to see the list of videos those two channels have worked on together.</li>
+                <li>Double click on any channel to open that channel's connections alongside the current channel</li>
+                <li>Single click on any line to see the list of videos those two channels have worked on together</li>
             </ul>
             <h2>How does it work?</h2>
             <p>
@@ -126,7 +184,7 @@
             </p>
             <p>
                 <b>Disclaimer:</b> This tool is only as good as the data it gets. If your chosen channel doesn't include
-                links to it's collaborators in the title or description, it won't be able to find any links!
+                links to it's collaborators in the title or description, it won't be able to find any links!.
             </p>
         <h2>Contact Me</h2>
             <p>Is this not working for your channel / device? Tweet me <a href="https://twitter.com/CookieHookHacks" target="_blank">@CookieHookHacks</a></p>
@@ -135,23 +193,23 @@
         </div>
 
         <!-- Primary graph -->
-        <div class="col-lg-5">
-            <div class="row">
+        <div class="col-lg-6" id="main-panel">
+            <div class="row sidepanel" align="center">
                 <form autocomplete="on" action="/" method="get" id="form">
                     <input type="text" placeholder="Your Channel Here" name="channel">
-                    <input type="submit" value="Search" class="loading">
-                    <div class="dropdown">
+                    <input type="submit" value="Search" class="loading"> or
+                    <span class="dropdown">
                         <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Select from popular channels
                         </button>
-                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                            {% for i in history %}
-                            <a class="dropdown-item loading" href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p>
+                        <span class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for h in history %}
+                            <a class="dropdown-item loading" href="/?channel={{ h[0] }}"><p>{{ h[1] }}</p>
                             </a>
                             {% endfor %}
-                        </div>
-                    </div>
+                        </span>
+                    </span>
                 </form>
                 <div id="load" style="display: none;"><img src="/static/img/loading.gif"/></div>
             </div>
@@ -160,15 +218,25 @@
                 <h2 align="center">An error occurred. Oh dear</h2>
                 <p align="center">{{ message|safe }}</p>
                 {% else %}
-                <div id="maingraph" style="height: 800px"></div>
+                <div id="maingraph"></div>
+                <div align="center">
+                    <span><input type="range" min="-180" max="180" value="0" class="slider" id="myRange"></span>
+                    <label for="myRange">Chart Rotation</label><br>
+                    <span><button type="button" id="save-as-png">Save as PNG</button></span>
+                    <span><button type="button" id="save-as-svg">Save as SVG</button></span>
+                    <span><button type="button" id="save-as-json">Save as JSON</button></span>
+                    <span><button type="button" id="fit">Fit to screen</button></span>
+                    <span><button type="button" id="minimise">Hide side panels</button></span>
+                    <span><button type="button" id="maximise" style="display: none;">Show side panels</button></span>
+                </div>
                 {% endif %}
             </div>
         </div>
 
         <!-- List of collaborations -->
-        <div class="col-lg-3" >
-            <h2>Collaborated Videos</h2>
-             <p id='collabs'>Click a collaboration line to list videos here</p>
+        <div class="col-lg-3 sidepanel" >
+            <h2>Collaborations</h2>
+             <p id='videos'>Click a collaboration line to list videos here</p>
         </div>
     </div>
 </div>

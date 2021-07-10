@@ -42,5 +42,6 @@ def entrypoint(event, context):
     return aws_lambda_wsgi.response(create_app(), event, context)
 
 
+app = create_app()
 if __name__ == '__main__':
-    create_app().run('0.0.0.0', 5000)
+    app.run('0.0.0.0', 5000)

@@ -1,14 +1,16 @@
+import html
 import logging
 import traceback
 import statistics
 import urllib
 
-from flask import Blueprint, current_app, request, render_template, jsonify
+from flask import Blueprint, current_app, request, render_template, jsonify, url_for
 from sqlalchemy.exc import IntegrityError
 
 from src.controllers import get_collaborations
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
 from src.extensions import db
+from src.models.channel import Channel
 from src.models.collaboration import Collaboration
 from src.models.history import History
 from src.models.video import Video
@@ -21,6 +23,7 @@ logger = logging.getLogger()
 def generate_collaboration_graph():
     logger.info("Requested endpoint '/'")
     target_channel_name = urllib.parse.unquote_plus(request.args.get('channel', ''))
+    previous_channel_name = urllib.parse.unquote_plus(request.args.get('previous_channel', ''))
     if not target_channel_name:  # Default for when users load the page
         target_channel_name = 'Violet Orlandi'
     with current_app.app_context():
@@ -28,13 +31,16 @@ def generate_collaboration_graph():
         db.engine.dispose()
         collabs_json = {"nodes": [], "edges": []}
         node_size = 1
-        message = None
+        chart_title = message = None
+        history = [[urllib.parse.quote(c.channel.title), c.channel.title] for c in History.get()]
 
         try:
-            collabs = get_collaborations.get_collaborations_for_channel(target_channel_name)
+            collabs = get_collaborations.get_collaborations_for_channel(target_channel_name, previous_channel_name)
             if len(collabs) > 0:
-                collabs_json = build_anygraph_json(collabs)
-                node_size = 1000 / len(collabs_json['nodes'])
+                self_url = url_for('graph.generate_collaboration_graph', _external=True)
+                collabs_json = build_anygraph_json(self_url, target_channel_name, collabs)
+                chart_title = f"{target_channel_name} & {previous_channel_name}" if previous_channel_name else target_channel_name
+                node_size = 1000 / len(collabs_json['nodes']) if 1000 / len(collabs_json['nodes']) < 100 else 100
             else:
                 message = "This channel has no collaborations"
         except ChannelNotFoundException:
@@ -55,8 +61,8 @@ def generate_collaboration_graph():
                            collab_data={'nodes': sorted(collabs_json['nodes'], key=lambda x: x['id']),
                                         'edges': sorted(collabs_json['edges'], key=lambda x: x['id'])},
                            node_size=node_size,
-                           target_channel_name=target_channel_name,
-                           history=History.get(),
+                           chart_title=chart_title,
+                           history=history,
                            message=message)
 
 
@@ -98,17 +104,14 @@ def process_collaborations():
 @graph_bp.route('/collaborations')
 def get_collaboration_videos():
     logger.info("Requested endpoint '/collaborations'")
-    channel_1 = request.args.get('c1')
-    channel_2 = request.args.get('c2')
-    if not channel_1 or not channel_2:
-        return "c1 and c2 querystring must be set and by valid channel IDs", 400
-
+    channel_1 = Channel.from_id(request.args.get('c1'))
+    channel_2 = Channel.from_id(request.args.get('c2'))
     # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
     videos = {c.video for c in Collaboration.for_channels(channel_1, channel_2)}
-    return render_template("video_list.html", videos=videos)
+    return render_template("video_list.html", channel_1=channel_1, channel_2=channel_2, videos=videos)
 
 
-def build_anygraph_json(collabs):
+def build_anygraph_json(self_url, previous_channel, collabs):
     nodes = {}
     pairs = {}
     edges = []
@@ -160,8 +163,8 @@ def build_anygraph_json(collabs):
         edge_id += 1
 
     collabs_json = {
-        "nodes": [{"id": k, "url": f"https://www.youtube.com/channel/{v['id']}", "fill": {"src": v["fill"]}} for
-                  k, v in nodes.items()],
+        "nodes": [{"id": k, "url": f"{self_url}?channel={urllib.parse.quote(k)}&previous_channel={urllib.parse.quote(previous_channel)}",
+                   "fill": {"src": v["fill"]}} for k, v in nodes.items()],
         "edges": edges
     }
     # import json

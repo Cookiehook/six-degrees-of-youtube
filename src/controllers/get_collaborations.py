@@ -19,7 +19,7 @@ def get_chunks(data, n):
     return [data[i::n] for i in range(n)]
 
 
-def get_collaborations_for_channel(channel_name: str) -> list:
+def get_collaborations_for_channel(channel_name: str, previous_channel_name: str) -> list:
     """
     Identifies all collaborations that a particular channel has made by parsing tags and hyperlinks
     in all videos uploaded by that channel. A collaboration instance is created for each.
@@ -67,7 +67,11 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         else:
             raise
 
-    return Collaboration.for_target_channel(target_channel)
+    if previous_channel_name:
+        previous_channel = Channel.from_title(previous_channel_name)
+        return Collaboration.for_target_channel(target_channel) + Collaboration.for_target_channel(previous_channel)
+    else:
+        return Collaboration.for_target_channel(target_channel)
 
 
 def request_videos_for_channel(url, channel_id):
