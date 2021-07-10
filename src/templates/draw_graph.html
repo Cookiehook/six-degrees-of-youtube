@@ -16,6 +16,14 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('.loading').click(function(){
+                $('#load').show();
+                $('#form').hide();
+            });
+        });
+    </script>
 
     <script>
         // Defining string.format, as it isn't in base JS
@@ -129,9 +137,9 @@
         <!-- Primary graph -->
         <div class="col-lg-5">
             <div class="row">
-                <form autocomplete="on" action="/" method="get">
+                <form autocomplete="on" action="/" method="get" id="form">
                     <input type="text" placeholder="Your Channel Here" name="channel">
-                    <input type="submit" value="Search"> or
+                    <input type="submit" value="Search" class="loading">
                     <div class="dropdown">
                         <button class="dropdown-toggle" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -139,12 +147,13 @@
                         </button>
                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                             {% for i in history %}
-                            <a class="dropdown-item" href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p>
+                            <a class="dropdown-item loading" href="/?channel={{ i.channel.title }}"><p>{{ i.channel.title }}</p>
                             </a>
                             {% endfor %}
                         </div>
                     </div>
                 </form>
+                <div id="load" style="display: none;"><img src="/static/img/loading.gif"/></div>
             </div>
             <div class="row">
                 {% if message %}
