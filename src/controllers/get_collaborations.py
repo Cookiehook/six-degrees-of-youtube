@@ -40,8 +40,9 @@ def get_collaborations_for_channel(channel_name: str) -> list:
         videos = get_uploads_for_channels(guest_channels)
 
         if videos:
-            processes = distribute_videos(target_channel.id, videos)
-            process_threads(processes)
+            populate_collaborations(target_channel.id, videos)
+            # processes = distribute_videos(target_channel.id, videos)
+            # process_threads(processes)
         target_channel.processed = True
         History.add(target_channel)
         Video.commit()

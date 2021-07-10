@@ -91,7 +91,7 @@
     <div class="row">
 
         <!-- Blurb / About the site -->
-        <div class="col-lg-3">
+        <div class="col-lg-4">
             <h2>What is this?</h2>
             <p>
                 Six degrees of Youtube is a project for identifying collaborations between Youtubers. Every icon in the
@@ -101,32 +101,35 @@
             <p>
                 The default graph is the network for the wonderful goth metal singer Violet Orlandi.
             </p>
-        <h2>How do I use it?</h2>
+            <h2>How do I use it?</h2>
+            <ul>
+                <li>Enter the name of your desired channel into the search box, and click Search</li>
+                <li>Move the graph around by holding the left mouse button and moving the mouse</li>
+                <li>Zoom in and out with the mouse wheel</li>
+                <li>To re-arrange the graph, select channels you wish to move (CTRL+click for multiple channels), then drag to move them</li>
+                <li>Double click on any channel to open that channel in Youtube.</li>
+                <li>Single click on any line to see the list of videos those two channels have worked on together.</li>
+            </ul>
+            <h2>How does it work?</h2>
             <p>
-                Enter the name of your desired channel, exactly as it appears in Youtube, into the search box, and click
-                Search. Move the graph around by holding the left mouse button and moving the mouse. Zoom in and out with the mouse wheel.
-                To  re-arrange the graph, select channels you wish to move (CTRL+click for multiple channels), then drag to move them.
+                This works by scanning through every video uploaded by the submitted channel. It looks for links to
+                other youtube channels or videos in the title and description, adding them to a list. Then, all videos
+                uploaded by all channels are cross-referenced to find collaborations between any of the channels.
             </p>
             <p>
-                Double click on any channel to open that channel in Youtube.
-                Single click on any line to see the list of videos those two channels have worked on together.
-            </p>
-        <h2>How does it work?</h2>
-            <p>
-                This works by scanning through every video uploaded by the submitted channel. It looks for links to other
-                youtube channels or videos in the title and description, adding them to a list. Then, all videos uploaded
-                by all channels are cross-referenced to find collaborations between any of the channels.
+                <b>Disclaimer:</b> This tool is only as good as the data it gets. If your chosen channel doesn't include
+                links to it's collaborators in the title or description, it won't be able to find any links!
             </p>
         <h2>Contact Me</h2>
             <p>Is this not working for your channel / device? Tweet me <a href="https://twitter.com/CookieHookHacks" target="_blank">@CookieHookHacks</a></p>
             <p>Want to see the code for yourself? It's available on <a href="https://github.com/Cookiehook/six-degrees-of-youtube" target="_blank">Github</a></p>
-            <p>Running this isn't free. If you've enjoyed, consider throwing a few quid my way on <a href="https://www.ko-fi.com/cookiehook" target="_blank">Ko-Fi</a></p>
+            <p>Keeping this online isn't free. If you've enjoyed it, consider throwing a few quid my way on <a href="https://www.ko-fi.com/cookiehook" target="_blank">Ko-Fi</a></p>
         </div>
 
         <!-- Primary graph -->
-        <div class="col-lg-6">
+        <div class="col-lg-5">
             <div class="row">
-                <form action="/" method="get">
+                <form autocomplete="on" action="/" method="get">
                     <input type="text" placeholder="Your Channel Here" name="channel">
                     <input type="submit" value="Search"> or
                     <div class="dropdown">

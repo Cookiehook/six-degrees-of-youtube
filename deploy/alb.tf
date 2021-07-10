@@ -9,15 +9,11 @@ resource "aws_alb" "six-degrees-of-youtube" {
   load_balancer_type         = "application"
 
   security_groups = [
-    aws_security_group.web-rds.id
+    aws_security_group.six-degrees-of-youtube.id
   ]
   subnets = [
     aws_subnet.eu-west-2a-public.id,
-    aws_subnet.eu-west-2a-public.id,
     aws_subnet.eu-west-2b-public.id,
-    aws_subnet.eu-west-2b-public.id,
-    aws_subnet.eu-west-2c-public.id,
-    aws_subnet.eu-west-2c-public.id,
   ]
 
   tags = {

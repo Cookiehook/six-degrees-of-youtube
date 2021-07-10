@@ -20,11 +20,18 @@ resource "aws_lambda_function" "six-degrees-of-youtube" {
   runtime          = "python3.8"
   timeout          = 900
   vpc_config {
-    security_group_ids = [aws_security_group.web-rds.id]
+    security_group_ids = [aws_security_group.six-degrees-of-youtube.id]
     subnet_ids = [
       aws_subnet.eu-west-2a-public.id,
-      aws_subnet.eu-west-2a-private.id
+      aws_subnet.eu-west-2a-private.id,
+      aws_subnet.eu-west-2b-public.id,
+      aws_subnet.eu-west-2b-private.id,
     ]
+  }
+  environment {
+    variables = {
+      "PYTHONUNBUFFERED": 1
+    }
   }
 }
 

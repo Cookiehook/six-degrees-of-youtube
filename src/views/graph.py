@@ -1,6 +1,7 @@
 import logging
 import traceback
 import statistics
+import urllib
 
 from flask import Blueprint, current_app, request, render_template
 
@@ -17,7 +18,7 @@ logger = logging.getLogger()
 @graph_bp.route('/')
 def generate_collaboration_graph():
     logger.info("Requested endpoint '/'")
-    target_channel_name = request.args.get('channel')
+    target_channel_name = urllib.parse.unquote_plus(request.args.get('channel', ''))
     if not target_channel_name:  # Default for when users load the page
         target_channel_name = 'Violet Orlandi'
     with current_app.app_context():

@@ -11,16 +11,14 @@ resource "aws_db_subnet_group" "rds" {
     aws_subnet.eu-west-2a-public.id,
     aws_subnet.eu-west-2a-private.id,
     aws_subnet.eu-west-2b-public.id,
-    aws_subnet.eu-west-2b-public.id,
-    aws_subnet.eu-west-2c-public.id,
-    aws_subnet.eu-west-2c-public.id,
+    aws_subnet.eu-west-2b-private.id,
   ]
 }
 
 resource "aws_db_instance" "six-degrees-of-youtube" {
   allocated_storage                     = "20"
   auto_minor_version_upgrade            = "true"
-  availability_zone                     = "eu-west-2c"
+  availability_zone                     = "eu-west-2a"
   backup_retention_period               = "7"
   backup_window                         = "03:00-03:30"
   ca_cert_identifier                    = "rds-ca-2019"
@@ -49,7 +47,8 @@ resource "aws_db_instance" "six-degrees-of-youtube" {
   storage_type                          = "gp2"
   username                              = "postgres"
   password                              = random_password.master.result
-  vpc_security_group_ids                = [aws_security_group.web-rds.id]
+  vpc_security_group_ids                = [aws_security_group.six-degrees-of-youtube.id]
+  skip_final_snapshot                   = "true"
 }
 
 
