@@ -41,6 +41,10 @@ class Video(YoutubeObject, db.Model):
     def commit():
         db.session.commit()
 
+    def is_processed(self, channel):
+        self.processed_for += "|" + channel.id
+        db.session.commit()
+
     @classmethod
     def from_id(cls, id: str, cache_only: bool = False):
         """

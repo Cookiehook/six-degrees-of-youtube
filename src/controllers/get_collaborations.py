@@ -234,11 +234,9 @@ def populate_collaborations(target_channel_id: str, videos: list):
         collaborators.update(get_channels_from_title(video, cache_only=True))
         for guest in collaborators:
             existing_collabs = Collaboration.for_video(video)
-            collab = Collaboration(host, guest, video)
             if host.id == guest.id:
                 continue  # Happens when an artist references another of their videos in the description
-            if collab in existing_collabs:
+            if any({collab.channel_1_id, collab.channel_2_id} == {host.id, guest.id} for collab in existing_collabs):
                 continue  # Happens when we're re-processing this video in the context of another channel
-            collab.commit()
-        video.processed_for += "|" + target_channel.id
-    Video.commit()
+            Collaboration(host, guest, video)
+        video.is_processed(target_channel)

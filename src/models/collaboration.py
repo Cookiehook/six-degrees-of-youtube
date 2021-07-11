@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import relationship
 
 from src.extensions import db
@@ -28,6 +28,9 @@ class Collaboration(db.Model):
         self.channel_2.id = self.channel_2.id
         self.video.id = self.video.id
 
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return self.channel_1.title + " - " + self.channel_2.title + " - " + self.video.title
 
@@ -38,10 +41,6 @@ class Collaboration(db.Model):
         c1 = self.channel_1_id if self.channel_1_id > self.channel_2_id else self.channel_2_id
         c2 = self.channel_1_id if self.channel_1_id < self.channel_2_id else self.channel_2_id
         return hash((c1, c2))
-
-    def commit(self):
-        db.session.add(self)
-        db.session.commit()
 
     @classmethod
     def get_collaborators(cls, target_channel: Channel) -> set:
@@ -65,6 +64,10 @@ class Collaboration(db.Model):
         return cls.query.filter(and_(cls.channel_1_id.in_(partners), cls.channel_2_id.in_(partners))).all()
 
     @classmethod
+    def for_single_channel(cls, channel) -> list:
+        return cls.query.filter(or_(cls.channel_1_id == channel.id, cls.channel_2_id == channel.id)).all()
+
+    @classmethod
     def for_channels(cls, channel_1: Channel, channel_2: Channel) -> list:
         """
         Return all collaborations involving both channel IDs
@@ -74,7 +77,7 @@ class Collaboration(db.Model):
         """
         query_1 = cls.query.filter(and_(cls.channel_1_id == channel_1.id, cls.channel_2_id == channel_2.id)).all()
         query_2 = cls.query.filter(and_(cls.channel_1_id == channel_2.id, cls.channel_2_id == channel_1.id)).all()
-        return sorted(query_1 + query_2, key=lambda c: c.video.published_at, reverse=True)
+        return query_1 + query_2
 
     @classmethod
     def for_video(cls, video):

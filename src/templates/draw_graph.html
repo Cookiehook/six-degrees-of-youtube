@@ -67,7 +67,7 @@
                 if (tag && tag.type === 'edge') {
                     for (var i = 0; i < data.edges.length; i++) {
                         if (data.edges[i].id === tag.id) {
-                            var url = "/collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
+                            var url = "/dual_collaborations?c1={0}&c2={1}".format(data.edges[i].channels[0], data.edges[i].channels[1]);
                             var video_html = "<iframe id='videos' style='height: {0}; width: 100%' frameBorder='0' src='{1}'></iframe>".format(window.innerHeight*0.8+"px", url);
                             var video_target = document.getElementById('videos');
                             video_target.outerHTML = video_html;
@@ -75,6 +75,19 @@
                         }
                     }
                 }
+                if (tag && tag.type === 'node') {
+                    for (var i = 0; i < data.nodes.length; i++) {
+                        if (data.nodes[i].id === tag.id) {
+                            var url = "/single_collaborations?c={0}".format(data.nodes[i].channel_id);
+                            var video_html = "<iframe id='videos' style='height: {0}; width: 100%' frameBorder='0' src='{1}'></iframe>".format(window.innerHeight*0.8+"px", url);
+                            var video_target = document.getElementById('videos');
+                            video_target.outerHTML = video_html;
+                            break;
+                        }
+                    }
+                }
+
+
             });
         })
 
@@ -164,9 +177,6 @@
                 graph is a Youtube channel that has worked with the channel in the centre. The thicker the line
                 between any two channels, the more videos they have collaborated on together.
             </p>
-            <p>
-                The default graph is the network for the wonderful goth metal singer Violet Orlandi.
-            </p>
             <h2>How do I use it?</h2>
             <ul>
                 <li>Enter the name of your desired channel into the search box, and click Search</li>
@@ -186,10 +196,10 @@
                 <b>Disclaimer:</b> This tool is only as good as the data it gets. If your chosen channel doesn't include
                 links to it's collaborators in the title or description, it won't be able to find any links!.
             </p>
-        <h2>Contact Me</h2>
-            <p>Is this not working for your channel / device? Tweet me <a href="https://twitter.com/CookieHookHacks" target="_blank">@CookieHookHacks</a></p>
-            <p>Want to see the code for yourself? It's available on <a href="https://github.com/Cookiehook/six-degrees-of-youtube" target="_blank">Github</a></p>
-            <p>Keeping this online isn't free. If you've enjoyed it, consider throwing a few quid my way on <a href="https://www.ko-fi.com/cookiehook" target="_blank">Ko-Fi</a></p>
+        <h2>Contacts</h2>
+            <p><a href="https://twitter.com/CookieHookHacks" target="_blank"><img  style="height: 20px" src="/static/img/twitter.png"/> @CookiehookHacks</a></p>
+            <p><a href="https://github.com/Cookiehook/six-degrees-of-youtube" target="_blank"><img  style="height: 20px" src="/static/img/github.png"/> @Cookiehook/six-degrees-of-youtube</a></p>
+            <p><a href="https://www.ko-fi.com/cookiehook" target="_blank"><img  style="height: 20px" src="/static/img/kofi.png"/> Cookiehook</a></p>
         </div>
 
         <!-- Primary graph -->

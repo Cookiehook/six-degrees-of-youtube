@@ -38,9 +38,8 @@ def generate_collaboration_graph():
             collabs = get_collaborations.get_collaborations_for_channel(target_channel_name, previous_channel_name)
             if len(collabs) > 0:
                 self_url = url_for('graph.generate_collaboration_graph', _external=True)
-                collabs_json = build_anygraph_json(self_url, target_channel_name, collabs)
+                collabs_json, node_size = build_anygraph_json(self_url, target_channel_name, collabs)
                 chart_title = f"{target_channel_name} & {previous_channel_name}" if previous_channel_name else target_channel_name
-                node_size = 1000 / len(collabs_json['nodes']) if 1000 / len(collabs_json['nodes']) < 100 else 100
             else:
                 message = "This channel has no collaborations"
         except ChannelNotFoundException:
@@ -101,14 +100,25 @@ def process_collaborations():
     return ''
 
 
-@graph_bp.route('/collaborations')
-def get_collaboration_videos():
+@graph_bp.route('/dual_collaborations')
+def get_dual_collaboration_videos():
     logger.info("Requested endpoint '/collaborations'")
     channel_1 = Channel.from_id(request.args.get('c1'))
     channel_2 = Channel.from_id(request.args.get('c2'))
     # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
     videos = {c.video for c in Collaboration.for_channels(channel_1, channel_2)}
-    return render_template("video_list.html", channel_1=channel_1, channel_2=channel_2, videos=videos)
+    return render_template("dual_videos_list.html", channel_1=channel_1, channel_2=channel_2,
+                           videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
+
+
+@graph_bp.route('/single_collaborations')
+def get_single_collaboration_videos():
+    logger.info("Requested endpoint '/collaborations'")
+    channel = Channel.from_id(request.args.get('c'))
+    # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
+    videos = {c.video for c in Collaboration.for_single_channel(channel)}
+    return render_template("single_videos_list.html", channel=channel,
+                           videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
 
 
 def build_anygraph_json(self_url, previous_channel, collabs):
@@ -133,9 +143,11 @@ def build_anygraph_json(self_url, previous_channel, collabs):
         std_dev = statistics.stdev(sorted(pairs.values())[:index])
         range = sorted(pairs.values())[index] - sorted(pairs.values())[0]
 
+    # Node size maximum is 100. Edge width maximum is node size. Otherwise clipping occurs
+    node_size = 1000 / len(nodes) if 1000 / len(nodes) < 100 else 100
     edge_id = 1
     for collab, strength in pairs.items():
-        line_thickess = strength / range * 40 if strength / range * 40 < 25 else 25
+        line_thickess = strength / range * 40 if strength / range * 40 < node_size else node_size
         edges.append({
             "id": f"edge_{edge_id}",
             "from": collab.channel_1.title,
@@ -163,7 +175,9 @@ def build_anygraph_json(self_url, previous_channel, collabs):
         edge_id += 1
 
     collabs_json = {
-        "nodes": [{"id": k, "url": f"{self_url}?channel={urllib.parse.quote(k)}&previous_channel={urllib.parse.quote(previous_channel)}",
+        "nodes": [{"id": k,
+                   "channel_id": v["id"],
+                   "url": f"{self_url}?channel={urllib.parse.quote(k)}&previous_channel={urllib.parse.quote(previous_channel)}",
                    "fill": {"src": v["fill"]}} for k, v in nodes.items()],
         "edges": edges
     }
@@ -171,4 +185,4 @@ def build_anygraph_json(self_url, previous_channel, collabs):
     # import os
     # with open(os.path.join('data', 'violet_collabs.json'), 'r') as collab_file:
     #     collabs_json = json.loads(collab_file.read())
-    return collabs_json
+    return collabs_json, node_size
