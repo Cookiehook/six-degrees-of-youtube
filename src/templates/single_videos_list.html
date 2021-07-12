@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <p><a href="https://www.youtube.com/channel/{{ channel.id }}" target="_blank">
+        <img style="border-radius: 50%; height: 75px" src="{{ channel.thumbnail_url }}"/>
+        {{ channel.title }}
+    </a></p>
+    <div class="row"></div>
+    {% for v in videos %}
+    <div class="row">
+        <p><a href="https://www.youtube.com/watch?v={{ v.id }}" target="_blank"><img src="{{ v.thumbnail_url }}"/></a></p>
+        <h4>{{ v.title }}</h4>
+    </div>
+    {% endfor %}
+</div>
+</body>
+</html>

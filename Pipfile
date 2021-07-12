@@ -4,11 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+boto3 = "*"  # Accessing RDS secrets
 flask = "*"  # Web application framework
-flask_sqlalchemy = "*"  # DB interaction and ORM
+sqlalchemy = "*"  # DB interaction and ORM
+flask_sqlalchemy_session = "*"  # Manages a unique session for each request context
 psycopg2-binary = "*"  # Driver for Postgres DB
 requests = "*"  # Make HTTPS calls out to the Youtube API
 beautifulsoup4 = "*"  # HTML parser for retrieving URLs
+gunicorn = "*"  # Production webserver
 
 [dev-packages]
 pytest = "*"  # Unit test framework
@@ -17,4 +20,4 @@ responses = "*"  # Stub HTTP responses out to Youtube API
 flake8 = "*"  # Code quality analysis
 
 [requires]
-python_version = "3.9"
+python_version = "3.8"

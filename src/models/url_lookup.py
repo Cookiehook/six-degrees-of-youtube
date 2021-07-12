@@ -1,23 +1,20 @@
-from src.extensions import db
+from flask_sqlalchemy_session import current_session
+from sqlalchemy import Column, String, Boolean
+
+from src.extensions import Base
 
 
-class UrlLookup(db.Model):
+class UrlLookup(Base):
     """
     Sometimes a given URL will be an old url, which redirects to the new.
     Sometimes a given URL will be a username, which redirects to /user/<url>
     This class stores and resolves these redirects when found, allowing searching through cached API responses
     """
-    original = db.Column(db.String, primary_key=True)
-    resolved = db.Column(db.String)
-    is_username = db.Column(db.Boolean)
+    __tablename__ = "url_lookup"
 
-    def __init__(self, original: str, resolved: str, is_username: bool = False):
-        self.original = original
-        self.resolved = resolved
-        self.is_username = is_username
-
-        db.session.add(self)
-        db.session.commit()
+    original = Column(String, primary_key=True)
+    resolved = Column(String)
+    is_username = Column(Boolean)
 
     def __repr__(self):
         return self.original + " - " + self.resolved
@@ -31,16 +28,16 @@ class UrlLookup(db.Model):
         :param url: URL to resolve
         :return: Resolved URL of None
         """
-        if lookup := cls.query.filter_by(original=url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url or cls.original == url.lower()).first():
             return lookup.resolved
 
-    @staticmethod
-    def url_is_username(url: str) -> bool:
+    @classmethod
+    def url_is_username(cls, url: str) -> bool:
         """
         Check if the given URL resolves to a user, not url attribute.
 
         :param url: URL to check
         :return: bool if URL found, None if not
         """
-        if lookup := UrlLookup.query.filter_by(original=url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url or cls.original == url.lower()).first():
             return lookup.is_username

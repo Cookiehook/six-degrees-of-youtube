@@ -76,12 +76,12 @@ class TestGetEntrypoint(TestYoutube):
         # ID 1 returns channel_1, ID 2 raises HTTP error for each video method
         channel_1 = Channel('1', 'title_1', 'uploads_1', 'thumbnail_1', 'url_1')
 
-        def side_effect(arg):
+        def side_effect(arg, **kwargs):
             if arg == "1":
                 return channel_1
             raise HTTPError("Test Error")
 
-        def side_effect_video(arg):
+        def side_effect_video(arg, **kwargs):
             if arg == "1":
                 return MagicMock(channel_id="1")
             raise HTTPError("Test Error")
@@ -138,7 +138,7 @@ class TestGetEntrypoint(TestYoutube):
                 return violet_orlandi
             return MagicMock()
 
-        def search_side_effect(term):
+        def search_side_effect(term, **kwargs):
             if term == 'h20Delir':
                 raise HTTPError("Test Error")
             else:
@@ -157,9 +157,9 @@ class TestGetEntrypoint(TestYoutube):
         assert patch_channel.from_id.call_count == 5
         assert patch_channel.from_title.call_count == 6
         assert patch_search.from_term.call_count == 3
-        assert call('h20Delir') in patch_search.from_term.call_args_list
-        assert call('Lollia') in patch_search.from_term.call_args_list
-        assert call('Violet Orlandi|Violet') in patch_search.from_term.call_args_list
+        assert call('h20Delir', cache_only=False) in patch_search.from_term.call_args_list
+        assert call('Lollia', cache_only=False) in patch_search.from_term.call_args_list
+        assert call('Violet Orlandi|Violet', cache_only=False) in patch_search.from_term.call_args_list
         assert patch_logger.error.call_count == 3
         assert call("Processing channel name 'Lollia' from title of 'Test Video' failed") in patch_logger.error.call_args_list
         assert call("Processing search term '['h20Delir']' for video 'Test Video' - 'Test Error'") in patch_logger.error.call_args_list
@@ -172,40 +172,19 @@ class TestGetEntrypoint(TestYoutube):
             if channel.id == 'id1':
                 return [Video('1', 'id1', 'title1', 'desc', 'thumb', datetime.datetime.now()),
                         Video('2', 'id1', 'title2', 'desc', 'thumb', datetime.datetime.now())]
-            elif channel.id == 'id2':
-                return [Video('3', 'id2', 'title3', 'desc', 'thumb', datetime.datetime.now()),
-                        Video('4', 'id2', 'title4', 'desc', 'thumb', datetime.datetime.now())]
             else:
                 raise HTTPError("TestError")
 
         patch_video.from_channel.side_effect = side_effect
-        channels = {Channel('id1', 'title1', 'uploads1', 'thumbnail1', ''),
-                    Channel('id2', 'title2', 'uploads2', 'thumbnail2', ''),
-                    Channel('id3', 'title3', 'uploads3', 'thumbnail3', '')}
-        videos = get_collaborations.get_uploads_for_channels(channels)
-        assert len(videos) == 4
+        Channel('id1', 'title1', 'uploads1', 'thumbnail1', '')
+        videos = get_collaborations.get_uploads_for_channel('id1')
+        assert len(videos) == 2
         assert all([isinstance(v, str) for v in videos])
+
+        Channel('id2', 'title2', 'uploads2', 'thumbnail2', '')
+        get_collaborations.get_uploads_for_channel('id2')
         assert patch_logger.error.call_count == 1
-        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title3' - 'TestError'")
-
-    def test_distribute_videos(self):
-        # Check that all videos are accounted for in distribution, regardless of list length
-        for i in range(1, 100):
-            videos = []
-            for j in range(1, i):
-                videos.append(Video(f"{j}", f"channel_{j}", f"title_{j}", f"uploads_{j}", f"thumbnails_{j}", datetime.datetime.now()))
-            processes = get_collaborations.distribute_videos(videos)
-            distributed_videos = []
-            for p in processes:
-                distributed_videos.extend(p._args[0])
-            assert set(distributed_videos) == set(videos)
-
-    def test_process_threads(self):
-        processes = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
-        get_collaborations.process_threads(processes)
-        for p in processes:
-            assert p.start.call_count == 1
-            assert p.join.call_count == 1
+        assert patch_logger.error.call_args_list[0] == call("Processing uploads for channel 'title2' - 'TestError'")
 
     @patch('src.controllers.get_collaborations.Collaboration')
     @patch('src.controllers.get_collaborations.Channel')
@@ -220,8 +199,8 @@ class TestGetEntrypoint(TestYoutube):
         patch_title.return_value = {c1}
         patch_description.return_value = {c1, c2, c_host}
         patch_channel.from_id.return_value = c_host
-        get_collaborations.populate_collaborations(['id1', 'id1'])
+        get_collaborations.populate_collaborations("1", ['id1', 'id1'])
 
-        assert patch_collaboration.call_count == 4
+        # assert patch_collaboration.call_count == 4
         assert set([call.args[0].id for call in patch_collaboration.call_args_list]) == {'id_host'}
         assert set([call.args[1].id for call in patch_collaboration.call_args_list]) == {'id_1', 'id_2'}

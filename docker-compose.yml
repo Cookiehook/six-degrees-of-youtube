@@ -1,8 +1,30 @@
 version: "3.7"
+secrets:
+  YOUTUBE_API_KEYS:
+    file: ./secrets/YOUTUBE_API_KEYS.secret
+  six-degrees-of-youtube-db-dsn:
+    file: ./secrets/six-degrees-of-youtube-db-dsn.secret
+
 services:
-  postgres:
+  app:
+    build: .
+    image: six-degrees-of-youtube
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000"
+    secrets:
+      - YOUTUBE_API_KEYS
+      - six-degrees-of-youtube-db-dsn
+  db:
     image: postgres
 #    command: [ "postgres", "-c", "log_statement=all" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 1s
+      retries: 5
     ports:
       - "127.0.0.1:5432:5432"
     environment:

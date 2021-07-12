@@ -2,44 +2,29 @@ import datetime
 import logging
 import re
 
-from src.extensions import db
+from flask_sqlalchemy_session import current_session
+from sqlalchemy import Column, String, DateTime
+
 from src.models.channel import Channel
 from src.models.youtube_object import YoutubeObject
 
 logger = logging.getLogger()
 
 
-class Video(YoutubeObject, db.Model):
+class Video(YoutubeObject):
     """Representation of a Video as returned from the Youtube 'videos' API endpoint"""
-    id = db.Column(db.String, primary_key=True)
-    channel_id = db.Column(db.String, nullable=False)
-    title = db.Column(db.String, nullable=False)
-    description = db.Column(db.String, nullable=False)
-    thumbnail = db.Column(db.String, nullable=False)
-    published_at = db.Column(db.DateTime, nullable=False)
-    processed = db.Column(db.Boolean, nullable=False)
+    __tablename__ = "video"
 
-    def __init__(self, id: str, channel_id: str, title: str, description: str, thumbnail: str,
-                 published_at: datetime.datetime, save: bool = True):
-        self.id = id
-        self.channel_id = channel_id
-        self.title = title
-        self.description = description
-        self.thumbnail = thumbnail
-        self.published_at = published_at
-        self.processed = False
-
-        if save:
-            db.session.add(self)
-        # We do not commit after every video, as this slows down parsing of playlists
-        # Instead, the from_channel method handles commits
+    id = Column(String, primary_key=True)
+    channel_id = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    thumbnail_url = Column(String, nullable=False)
+    published_at = Column(DateTime, nullable=False)
+    processed_for = Column(String, default='')
 
     def __repr__(self):
         return self.title + " - " + self.id
-
-    @staticmethod
-    def commit():
-        db.session.commit()
 
     @classmethod
     def from_id(cls, id: str, cache_only: bool = False):
@@ -52,7 +37,7 @@ class Video(YoutubeObject, db.Model):
         :return: Matching Video instance or None.
         :raises: AssertionError if more or less than 1 video is returned from the API
         """
-        if cached := cls.query.filter_by(id=id).first():
+        if cached := current_session.query(cls).filter(cls.id == id).first():
             return cached
         if cache_only:
             return
@@ -62,13 +47,12 @@ class Video(YoutubeObject, db.Model):
         assert len(videos) == 1, f'Returned unexpected number of videos: {videos}'
 
         # Don't cache videos returned from individual lookups, as it breaks the ability to refresh an uploads playlist
-        return cls(videos[0]['id'],
-                   videos[0]['snippet']['channelId'],
-                   videos[0]['snippet']['title'],
-                   videos[0]['snippet']['description'],
-                   videos[0]['snippet']['thumbnails']['medium']['url'],
-                   datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
-                   False
+        return cls(id=videos[0]['id'],
+                   channel_id=videos[0]['snippet']['channelId'],
+                   title=videos[0]['snippet']['title'],
+                   description=videos[0]['snippet']['description'],
+                   thumbnail_url=videos[0]['snippet']['thumbnails']['medium']['url'],
+                   published_at=datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
                    )
 
     @classmethod
@@ -86,11 +70,18 @@ class Video(YoutubeObject, db.Model):
             'playlistId': channel.uploads_id,
             'maxResults': 50
         }
-        cached_videos = cls.query.filter_by(channel_id=channel.id).order_by(cls.published_at.desc()).all()
+        cached_videos = current_session.query(cls).filter(cls.channel_id == channel.id).order_by(cls.published_at.desc()).all()
         if cache_only:
             return cached_videos
 
-        unprocessed_videos = cls.query.filter_by(channel_id=channel.id, processed=False).order_by(cls.published_at.desc()).all()
+        # Only omit processed videos if the channel has been successfully processed before.
+        # This stops collaborations being missed if a previous processed halted due to error.
+        if channel.processed:
+            unprocessed_videos = current_session.query(cls).filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id))\
+                .order_by(cls.published_at.desc()).all()
+        else:
+            unprocessed_videos = cached_videos
+
         ids = [v.id for v in cached_videos]
         latest_video = cached_videos[0] if cached_videos else None
         playlist_content, next_page = cls.get('playlistItems', params)
@@ -98,7 +89,7 @@ class Video(YoutubeObject, db.Model):
         while True:
             for new_video in playlist_content:
                 if latest_video and latest_video.id == new_video['snippet']['resourceId']['videoId']:
-                    cls.commit()
+                    current_session.commit()
                     return unprocessed_videos
                 if new_video['snippet']['resourceId']['videoId'] in ids:
                     # Items uploaded on the same day aren't in the right order. Eg, videos at 1pm, 2pm, 3pm may come
@@ -107,15 +98,17 @@ class Video(YoutubeObject, db.Model):
                     logger.warning(f"Tried to cache video {new_video['snippet']['resourceId']['videoId']} when it already exists")
                     continue
 
-                unprocessed_videos.append(cls(new_video['snippet']['resourceId']['videoId'],
-                                              new_video['snippet']['channelId'],
-                                              new_video['snippet']['title'],
-                                              new_video['snippet']['description'],
-                                              new_video['snippet']['thumbnails']['medium']['url'],
-                                              datetime.datetime.strptime(new_video['snippet']['publishedAt'],
-                                                                         '%Y-%m-%dT%H:%M:%SZ')))
+                video_instance = cls(id=new_video['snippet']['resourceId']['videoId'],
+                                     channel_id=new_video['snippet']['channelId'],
+                                     title=new_video['snippet']['title'],
+                                     description=new_video['snippet']['description'],
+                                     thumbnail_url=new_video['snippet']['thumbnails']['medium']['url'],
+                                     published_at=datetime.datetime.strptime(new_video['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'))
+                current_session.add(video_instance)
+                unprocessed_videos.append(video_instance)
+
             if next_page is None:
-                cls.commit()
+                current_session.commit()
                 return unprocessed_videos
             params['pageToken'] = next_page
             playlist_content, next_page = cls.get('playlistItems', params)

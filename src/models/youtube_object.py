@@ -5,14 +5,18 @@ from copy import copy
 import requests
 from requests import HTTPError
 
+from src.controllers import secrets
 from src.controllers.exceptions import YoutubeAuthenticationException
+from src.extensions import Base
 
 logger = logging.getLogger()
-api_keys = os.getenv('YOUTUBE_API_KEYS', '').split(',')
+
+api_keys = secrets.get_secret('YOUTUBE_API_KEYS').split(',')
 
 
-class YoutubeObject:
+class YoutubeObject(Base):
     """Base class for objects retrieved from the Youtube API"""
+    __abstract__ = True
 
     @staticmethod
     def get(endpoint: str, params: dict) -> tuple:
@@ -32,6 +36,7 @@ class YoutubeObject:
         auth_params = copy(params)  # Make a copy so the key doesn't end up in logs
         auth_params['key'] = api_keys[0]
         response = requests.get(base_url + endpoint, params=auth_params)
+        logger.debug(f"Response: {response.json()}")
 
         # If we still have multiple keys, try the next one
         if response.status_code == 403 and len(api_keys) > 1:

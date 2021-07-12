@@ -1,3 +1,5 @@
+.PHONY: deploy
+
 clean:
 	rm -rf .pytest_cache .coverage
 

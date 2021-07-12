@@ -2,37 +2,36 @@ import logging
 
 import requests
 from bs4 import BeautifulSoup
+from flask_sqlalchemy_session import current_session
 from requests import HTTPError
+from sqlalchemy import Column, String, Boolean
 
-from src.extensions import db
 from src.models.url_lookup import UrlLookup
 from src.models.youtube_object import YoutubeObject
 
 logger = logging.getLogger()
 
 
-class Channel(YoutubeObject, db.Model):
+class Channel(YoutubeObject):
     """Representation of a Channel as returned from the Youtube 'channels' API endpoint"""
-    id = db.Column(db.String, primary_key=True)
-    title = db.Column(db.String)
-    uploads_id = db.Column(db.String)
-    thumbnail_url = db.Column(db.String)
-    url = db.Column(db.String)
-    username = db.Column(db.String)
+    __tablename__ = "channel"
 
-    def __init__(self, id: str, title: str, uploads_id: str, thumbnail_url: str, url: str, username: str = ''):
-        self.id = id
-        self.title = title
-        self.uploads_id = uploads_id
-        self.thumbnail_url = thumbnail_url
-        self.url = url.lower()
-        self.username = username.lower()
-
-        db.session.add(self)
-        db.session.commit()
+    id = Column(String, primary_key=True)
+    title = Column(String)
+    uploads_id = Column(String)
+    thumbnail_url = Column(String)
+    url = Column(String)
+    username = Column(String)
+    processed = Column(Boolean)
 
     def __repr__(self):
         return self.title
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
 
     @classmethod
     def from_title(cls, title: str):
@@ -42,7 +41,7 @@ class Channel(YoutubeObject, db.Model):
         :param title: Title to match, eg: 'Violet Orlandi'.
         :return: Matching Channel instance or None.
         """
-        return cls.query.filter_by(title=title).first()
+        return current_session.query(cls).filter(cls.title == title).first()
 
     @classmethod
     def from_id(cls, id: str, cache_only: bool = False):
@@ -55,7 +54,7 @@ class Channel(YoutubeObject, db.Model):
         :return: Matching Channel instance or None.
         :raises: AssertionError if more or less than 1 channel is returned from the API
         """
-        if cached := cls.query.filter_by(id=id).first():
+        if cached := current_session.get(cls, id):
             return cached
         if cache_only:
             return
@@ -64,12 +63,15 @@ class Channel(YoutubeObject, db.Model):
         channels, _ = cls.get('channels', params)
         assert len(channels) == 1, f'Returned unexpected number of channels: {channels}'
 
-        return cls(channels[0]['id'],
-                   channels[0]['snippet']['title'],
-                   channels[0]['contentDetails']['relatedPlaylists']['uploads'],
-                   channels[0]['snippet']['thumbnails']['medium']['url'],
-                   channels[0]['snippet'].get('customUrl', '')
-                   )
+        new_channel = cls(id=channels[0]['id'],
+                          title=channels[0]['snippet']['title'],
+                          uploads_id=channels[0]['contentDetails']['relatedPlaylists']['uploads'],
+                          thumbnail_url=channels[0]['snippet']['thumbnails']['medium']['url'],
+                          url=channels[0]['snippet'].get('customUrl')
+                          )
+        current_session.add(new_channel)
+        current_session.commit()
+        return new_channel
 
     @classmethod
     def from_username(cls, username: str, cache_only: bool = False):
@@ -82,7 +84,7 @@ class Channel(YoutubeObject, db.Model):
         :return: Matching Channel instance or None.
         :raises: AssertionError if more or less than 1 channel is returned from the API
         """
-        if cached := cls.query.filter_by(username=username).first():
+        if cached := current_session.query(cls).filter(cls.username == username or cls.username == username.lower()).first():
             return cached
         if cache_only:
             return
@@ -90,18 +92,23 @@ class Channel(YoutubeObject, db.Model):
         channels, _ = cls.get('channels', {'part': 'contentDetails,snippet', 'forUsername': username})
         assert len(channels) == 1, f'Returned unexpected number of channels: {channels}'
 
-        if cached_by_id := cls.query.filter_by(id=channels[0]['id']).first():
+        # Usernames are queryable, but not returned by by the API. To speed up future queries,
+        # we check the cache for a channel with the ID we just retrieved, and save the username on that channel.
+        if cached_by_id := current_session.get(cls, channels[0]['id']):
             cached_by_id.username = username
-            db.session.commit()
+            current_session.commit()
             return cached_by_id
 
-        return cls(channels[0]['id'],
-                   channels[0]['snippet']['title'],
-                   channels[0]['contentDetails']['relatedPlaylists']['uploads'],
-                   channels[0]['snippet']['thumbnails']['medium']['url'],
-                   channels[0]['snippet'].get('customUrl', ''),
-                   username
-                   )
+        new_channel = cls(id=channels[0]['id'],
+                          title=channels[0]['snippet']['title'],
+                          uploads_id=channels[0]['contentDetails']['relatedPlaylists']['uploads'],
+                          thumbnail_url=channels[0]['snippet']['thumbnails']['medium']['url'],
+                          url=channels[0]['snippet'].get('customUrl'),
+                          username=username
+                          )
+        current_session.add(new_channel)
+        current_session.commit()
+        return new_channel
 
     @classmethod
     def from_url(cls, url, cache_only=False):
@@ -119,11 +126,11 @@ class Channel(YoutubeObject, db.Model):
         :raises: HTTPError if Youtube responds with non 200 response code, or metadata tag is not found.
         """
         if UrlLookup.url_is_username(url):
-            return cls.from_username(UrlLookup.get_resolved(url))
-        else:
-            url = UrlLookup.get_resolved(url) or url
-            if cached := cls.query.filter_by(url=url).first():
-                return cached
+            return cls.from_username(UrlLookup.get_resolved(url), cache_only=cache_only)
+
+        url = UrlLookup.get_resolved(url) or url
+        if cached := current_session.query(cls).filter(cls.url == url or cls.url == url.lower()).first():
+            return cached
         if cache_only:
             return
 
@@ -135,13 +142,12 @@ class Channel(YoutubeObject, db.Model):
             if og_url := soup.find('meta', property='og:url'):
                 if "/user/" in response.url:
                     channel = cls.from_username(response.url.split("/")[-1])
-                    UrlLookup(url, response.url.split("/")[-1], True)
+                    current_session.add(UrlLookup(original=url, resolved=response.url.split("/")[-1], is_username=True))
                 else:
                     channel = cls.from_id(og_url['content'].split("/")[-1])
-                if channel.url:
-                    UrlLookup(url, channel.url)
+                    current_session.add(UrlLookup(original=url, resolved=channel.url, is_username=False))
+                current_session.commit()
                 return channel
-
             else:
                 raise HTTPError(f"Could not find og:url meta tag for url {url}")
         else:
