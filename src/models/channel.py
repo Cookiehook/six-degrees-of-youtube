@@ -147,7 +147,6 @@ class Channel(YoutubeObject):
                     current_session.add(UrlLookup(original=url, resolved=response.url.split("/")[-1], is_username=True))
                 else:
                     channel = cls.from_id(og_url['content'].split("/")[-1])
-                if channel.url:
                     current_session.add(UrlLookup(original=url, resolved=channel.url, is_username=False))
                 current_session.commit()
                 return channel

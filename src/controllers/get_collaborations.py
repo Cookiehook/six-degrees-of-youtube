@@ -41,6 +41,8 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
         if host_videos:
             parallelism = 80
             pool = Pool(parallelism)  # Only instantiate pool if there's work to do, as it's expensive
+
+            logger.info(f"Retrieving guest channels for {target_channel}")
             guest_channels = {target_channel.id}
             host_videos_chunks = get_chunks(host_videos, parallelism)
             starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True), list] for list in host_videos_chunks]
@@ -48,6 +50,7 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
                 guest_channels.update(result)
 
             # Get all videos uploaded by all collaborators (including target channel)
+            logger.info(f"Retrieving all videos for {target_channel}")
             all_videos = []
             starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True), c] for c in guest_channels]
             for result in pool.starmap(request_videos_for_channel, starmap_args):
@@ -55,10 +58,11 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
 
             # Calculate all collaborations between collaborators (including target channel)
             if all_videos:
+                logger.info(f"Calculating collaborations for {target_channel}")
                 all_videos_chunks = get_chunks(all_videos, parallelism)
                 starmap_args = [[url_for('graph.process_collaborations', _external=True), target_channel.id, videos] for videos in all_videos_chunks]
                 pool.starmap(request_process_collaborations, starmap_args)
-
+            logger.info(f"Finished processing channel {target_channel}")
             target_channel.processed = True
             current_session.commit()
         History.add(target_channel)
