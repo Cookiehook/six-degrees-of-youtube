@@ -4,13 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aws_lambda_wsgi = "*"  # WSGI like handle for serverless lambda
 boto3 = "*"  # Accessing RDS secrets
 flask = "*"  # Web application framework
-flask_sqlalchemy = "*"  # DB interaction and ORM
+sqlalchemy = "*"  # DB interaction and ORM
 psycopg2-binary = "*"  # Driver for Postgres DB
 requests = "*"  # Make HTTPS calls out to the Youtube API
 beautifulsoup4 = "*"  # HTML parser for retrieving URLs
+gunicorn = "*"  # Production webserver
+supervisor = "*"  # Manages webserver and nginx proxy threads
 
 [dev-packages]
 pytest = "*"  # Unit test framework

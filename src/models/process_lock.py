@@ -1,20 +1,20 @@
-from src.extensions import db
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import Session
+
+from src.extensions import Base, engine
 
 
-class ProcessLock(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    channel_name = db.Column(db.String)
+class ProcessLock(Base):
+    __tablename__ = "process_lock"
 
-    def __init__(self, channel_name):
-        self.channel_name = channel_name
-
-        db.session.add(self)
-        db.session.commit()
+    channel_name = Column(String, primary_key=True)
 
     @classmethod
-    def get(cls, channel_name):
-        return cls.query.filter_by(channel_name=channel_name).all()
+    def get(cls, session, channel_name):
+        return session.query(cls).filter(cls.channel_name == channel_name).first()
 
-    def remove(self):
-        db.session.delete(self)
-        db.session.commit()
+    @classmethod
+    def remove(cls, session, channel_name):
+        lock = session.query(cls).filter(cls.channel_name == channel_name).first()
+        session.delete(lock)
+        session.commit()

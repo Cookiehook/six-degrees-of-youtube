@@ -17,7 +17,7 @@
     <div class="row"></div>
     {% for v in videos %}
     <div class="row">
-        <p><a href="https://www.youtube.com/watch?v={{ v.id }}" target="_blank"><img src="{{ v.thumbnail }}"/></a></p>
+        <p><a href="https://www.youtube.com/watch?v={{ v.id }}" target="_blank"><img src="{{ v.thumbnail_url }}"/></a></p>
         <h4>{{ v.title }}</h4>
     </div>
     {% endfor %}

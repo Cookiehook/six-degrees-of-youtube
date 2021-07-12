@@ -1,12 +1,13 @@
 from flask import Blueprint
+from sqlalchemy.orm import Session
 
-from src.extensions import db
+from src.extensions import engine, Base
 
 admin_bp = Blueprint('admin', __name__)
 
 
-@admin_bp.route('/resetcache')
+@admin_bp.route('/rebuild_db')
 def reset_cache():
-    db.drop_all()
-    db.create_all()
+    Base.metadata.drop_all()
+    Base.metadata.create_all()
     return ''

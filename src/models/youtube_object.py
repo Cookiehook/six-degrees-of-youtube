@@ -7,14 +7,16 @@ from requests import HTTPError
 
 from src.controllers import secrets
 from src.controllers.exceptions import YoutubeAuthenticationException
+from src.extensions import Base
 
 logger = logging.getLogger()
 
 api_keys = secrets.get_secret('YOUTUBE_API_KEYS').split(',')
 
 
-class YoutubeObject:
+class YoutubeObject(Base):
     """Base class for objects retrieved from the Youtube API"""
+    __abstract__ = True
 
     @staticmethod
     def get(endpoint: str, params: dict) -> tuple:

@@ -6,10 +6,11 @@ import urllib
 
 from flask import Blueprint, current_app, request, render_template, jsonify, url_for
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from src.controllers import get_collaborations
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
-from src.extensions import db
+from src.extensions import engine
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
 from src.models.history import History
@@ -27,12 +28,11 @@ def generate_collaboration_graph():
     if not target_channel_name:  # Default for when users load the page
         target_channel_name = 'Violet Orlandi'
     with current_app.app_context():
-        db.session.remove()
-        db.engine.dispose()
         collabs_json = {"nodes": [], "edges": []}
         node_size = 1
         chart_title = message = None
-        history = [[urllib.parse.quote(c.channel.title), c.channel.title] for c in History.get()]
+        with Session(engine) as session:
+            history = [[urllib.parse.quote(c.channel.title), c.channel.title] for c in History.get(session)]
 
         try:
             collabs = get_collaborations.get_collaborations_for_channel(target_channel_name, previous_channel_name)
@@ -68,57 +68,61 @@ def generate_collaboration_graph():
 @graph_bp.route("/calc/uploads", methods=['POST'])
 def get_uploads_for_channel():
     channel_id = request.get_json()['channel']
-    videos = get_collaborations.get_uploads_for_channel(channel_id)
-    return jsonify(videos=videos)
+    with Session(engine) as session:
+        videos = get_collaborations.get_uploads_for_channel(session, channel_id)
+        return jsonify(videos=videos)
 
 
 @graph_bp.route("/calc/parse_videos", methods=['POST'])
 def get_collaborators_for_videos():
     video_ids = request.get_json()['videos']
     guest_channels = set()
-    for video_id in video_ids:
-        try:
-            video = Video.from_id(video_id)
-            logger.debug(f"Parsing host video '{video}'")
-            guest_channels.update(get_collaborations.get_channels_from_description(video))
-            guest_channels.update(get_collaborations.get_channels_from_title(video))
-        except IntegrityError as e:
-            # flask-sqlalchemy package uses 1 long-lived database session, so when we go multi-threaded, 2 threads may
-            # have a session in which a channel doesn't exist, both try to write, and the latter raises a unique violation
-            # on the DB. Ignoring this isn't a problem as we're working with sets. The first write is all we need.
-            # The proper fix is to re-work all the DB interaction to use short-lived sessions, but I've been at this for weeks.....
-            logger.error(f"get_collaborators_for_videos - {e}")
-            db.session.rollback()
-    return jsonify(channels=[c.id for c in guest_channels])
+    with Session(engine) as session:
+        for video_id in video_ids:
+            try:
+                video = Video.from_id(session, video_id)
+                logger.debug(f"Parsing host video '{video}'")
+                guest_channels.update(get_collaborations.get_channels_from_description(session, video))
+                guest_channels.update(get_collaborations.get_channels_from_title(session, video))
+            except IntegrityError as e:
+                # flask-sqlalchemy package uses 1 long-lived database session, so when we go multi-threaded, 2 threads may
+                # have a session in which a channel doesn't exist, both try to write, and the latter raises a unique violation
+                # on the DB. Ignoring this isn't a problem as we're working with sets. The first write is all we need.
+                # The proper fix is to re-work all the DB interaction to use short-lived sessions, but I've been at this for weeks.....
+                session.rollback()
+        return jsonify(channels=[c.id for c in guest_channels])
 
 
 @graph_bp.route("/calc/process_collaborations", methods=['POST'])
 def process_collaborations():
     target_channel = request.get_json()['target_channel']
     video_ids = request.get_json()['videos']
-    get_collaborations.populate_collaborations(target_channel, video_ids)
+    with Session(engine) as session:
+        get_collaborations.populate_collaborations(session, target_channel, video_ids)
     return ''
 
 
 @graph_bp.route('/dual_collaborations')
 def get_dual_collaboration_videos():
     logger.info("Requested endpoint '/collaborations'")
-    channel_1 = Channel.from_id(request.args.get('c1'))
-    channel_2 = Channel.from_id(request.args.get('c2'))
-    # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
-    videos = {c.video for c in Collaboration.for_channels(channel_1, channel_2)}
-    return render_template("dual_videos_list.html", channel_1=channel_1, channel_2=channel_2,
-                           videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
+    with Session(engine) as session:
+        channel_1 = Channel.from_id(session, request.args.get('c1'))
+        channel_2 = Channel.from_id(session, request.args.get('c2'))
+        # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
+        videos = {c.video for c in Collaboration.for_channels(session, channel_1, channel_2)}
+        return render_template("dual_videos_list.html", channel_1=channel_1, channel_2=channel_2,
+                               videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
 
 
 @graph_bp.route('/single_collaborations')
 def get_single_collaboration_videos():
     logger.info("Requested endpoint '/collaborations'")
-    channel = Channel.from_id(request.args.get('c'))
-    # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
-    videos = {c.video for c in Collaboration.for_single_channel(channel)}
-    return render_template("single_videos_list.html", channel=channel,
-                           videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
+    with Session(engine) as session:
+        channel = Channel.from_id(session, request.args.get('c'))
+        # The set filters duplicates that appear when there are 2+ channels collaborating on 1 video
+        videos = {c.video for c in Collaboration.for_single_channel(session, channel)}
+        return render_template("single_videos_list.html", channel=channel,
+                               videos=sorted(videos, key=lambda v: v.published_at, reverse=True))
 
 
 def build_anygraph_json(self_url, previous_channel, collabs):
