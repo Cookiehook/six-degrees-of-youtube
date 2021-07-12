@@ -10,7 +10,6 @@ services:
       - "127.0.0.1:5000:5000"
     environment:
       - six-degrees-of-youtube-db-dsn=postgresql://postgres:bob@db:5432
-      - YOUTUBE_API_KEYS=AIzaSyAiRY0FIHwp-jByMMBy4ujSFN1xjom1GIo,AIzaSyAm75UbeiCmKFcXoxj6aIUAVBeFPGIj7Ik,AIzaSyDMu4PQHOpbsmIVVzRKDpM7ifPZun0AMZU,AIzaSyAAnHi0Sk_jaL_O0UESfbxZ5Knmc0IrC-I,AIzaSyDmYofN9ndYm_-uPBKLATdM8LFE294Hfts,AIzaSyAm75UbeiCmKFcXoxj6aIUAVBeFPGIj7Ik,AIzaSyBAWgTm2W-IhmHo7Holmdk9Tu-viq4meMo
 
   db:
     image: postgres
