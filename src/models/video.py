@@ -4,9 +4,7 @@ import re
 
 from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String, DateTime
-from sqlalchemy.orm import Session
 
-from src.extensions import engine
 from src.models.channel import Channel
 from src.models.youtube_object import YoutubeObject
 
@@ -79,7 +77,8 @@ class Video(YoutubeObject):
         # Only omit processed videos if the channel has been successfully processed before.
         # This stops collaborations being missed if a previous processed halted due to error.
         if channel.processed:
-            unprocessed_videos = current_session.query(cls).filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id)).order_by(cls.published_at.desc()).all()
+            unprocessed_videos = current_session.query(cls).filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id))\
+                .order_by(cls.published_at.desc()).all()
         else:
             unprocessed_videos = cached_videos
 

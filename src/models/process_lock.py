@@ -1,8 +1,7 @@
 from flask_sqlalchemy_session import current_session
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import Session
+from sqlalchemy import Column, String
 
-from src.extensions import Base, engine
+from src.extensions import Base
 
 
 class ProcessLock(Base):

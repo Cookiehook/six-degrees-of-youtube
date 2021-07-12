@@ -1,8 +1,7 @@
 from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String, Boolean
-from sqlalchemy.orm import Session
 
-from src.extensions import Base, engine
+from src.extensions import Base
 
 
 class UrlLookup(Base):
@@ -29,7 +28,7 @@ class UrlLookup(Base):
         :param url: URL to resolve
         :return: Resolved URL of None
         """
-        if lookup := current_session.query(cls).filter(cls.original == url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url or cls.original == url.lower()).first():
             return lookup.resolved
 
     @classmethod
@@ -40,5 +39,5 @@ class UrlLookup(Base):
         :param url: URL to check
         :return: bool if URL found, None if not
         """
-        if lookup := current_session.query(cls).filter(cls.original == url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url or cls.original == url.lower()).first():
             return lookup.is_username

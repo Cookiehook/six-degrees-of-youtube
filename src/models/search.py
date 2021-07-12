@@ -1,8 +1,6 @@
 from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String
-from sqlalchemy.orm import Session
 
-from src.extensions import engine
 from src.models.youtube_object import YoutubeObject
 
 

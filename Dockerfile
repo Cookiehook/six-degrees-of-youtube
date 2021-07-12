@@ -17,4 +17,4 @@ COPY src /app/src/
 COPY resources/* /app/
 #RUN /app/setup_file_ownership/sh
 
-CMD ["pipenv", "run", "gunicorn", "--preload", "-c", "/app/src/gunicorn.conf.py"]
+CMD ["pipenv", "run", "gunicorn", "--preload", "-c", "/app/src/gunicorn_conf.py"]

@@ -1,8 +1,8 @@
 from flask_sqlalchemy_session import current_session
-from sqlalchemy import and_, or_, Column, Integer, String, ForeignKey, select
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import and_, or_, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 
-from src.extensions import Base, engine
+from src.extensions import Base
 from src.models.channel import Channel
 from src.models.video import Video
 

@@ -2,9 +2,9 @@ import datetime
 
 from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import relationship
 
-from src.extensions import Base, engine
+from src.extensions import Base
 
 
 class History(Base):

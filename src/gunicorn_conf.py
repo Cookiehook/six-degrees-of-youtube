@@ -1,8 +1,6 @@
-import multiprocessing
 import os
 
 bind = "0.0.0.0:5000"
-# bind = "unix:/app/gunicorn.sock"
 workers = 1
 threads = 80
 wsgi_app = "src.app:app"

@@ -1,7 +1,6 @@
 from flask import Blueprint
-from sqlalchemy.orm import Session
 
-from src.extensions import engine, Base
+from src.extensions import Base
 
 admin_bp = Blueprint('admin', __name__)
 

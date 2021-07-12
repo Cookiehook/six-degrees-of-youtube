@@ -6,6 +6,7 @@ from flask import url_for
 from flask_sqlalchemy_session import current_session
 from requests import HTTPError
 
+from src import gunicorn_conf
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
 from src.models.channel import Channel
 from src.models.collaboration import Collaboration
@@ -39,12 +40,11 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
         host_videos = [v.id for v in Video.from_channel(target_channel)]
 
         if host_videos:
-            parallelism = 80
-            pool = Pool(parallelism)  # Only instantiate pool if there's work to do, as it's expensive
+            pool = Pool(gunicorn_conf.threads)  # Only instantiate pool if there's work to do, as it's expensive
 
             logger.info(f"Retrieving guest channels for {target_channel}")
             guest_channels = {target_channel.id}
-            host_videos_chunks = get_chunks(host_videos, parallelism)
+            host_videos_chunks = get_chunks(host_videos, gunicorn_conf.threads)
             starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True), list] for list in host_videos_chunks]
             for result in pool.starmap(request_guest_channels_for_video, starmap_args):
                 guest_channels.update(result)
@@ -59,7 +59,7 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
             # Calculate all collaborations between collaborators (including target channel)
             if all_videos:
                 logger.info(f"Calculating collaborations for {target_channel}")
-                all_videos_chunks = get_chunks(all_videos, parallelism)
+                all_videos_chunks = get_chunks(all_videos, gunicorn_conf.threads)
                 starmap_args = [[url_for('graph.process_collaborations', _external=True), target_channel.id, videos] for videos in all_videos_chunks]
                 pool.starmap(request_process_collaborations, starmap_args)
             logger.info(f"Finished processing channel {target_channel}")
@@ -225,7 +225,7 @@ def populate_collaborations(target_channel_id: str, videos: list):
     """
     Iterate through a list of video objects, and create a Collaboration object
     for each identified work. These aren't returned as a later stage extracts all
-    relevant collaborations from the database, populated by multiple threads
+    relevant collaborations from the database, populated by multiple gunicorn_conf.threads
 
     :param videos: list of videos to process
     :param target_channel_id: Channel id that relationships are being calculated for.

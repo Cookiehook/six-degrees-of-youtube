@@ -4,10 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 from flask_sqlalchemy_session import current_session
 from requests import HTTPError
-from sqlalchemy import Column, String, Boolean, select
-from sqlalchemy.orm import Session
+from sqlalchemy import Column, String, Boolean
 
-from src.extensions import engine
 from src.models.url_lookup import UrlLookup
 from src.models.youtube_object import YoutubeObject
 
@@ -86,7 +84,7 @@ class Channel(YoutubeObject):
         :return: Matching Channel instance or None.
         :raises: AssertionError if more or less than 1 channel is returned from the API
         """
-        if cached := current_session.query(cls).filter(cls.username == username).first():
+        if cached := current_session.query(cls).filter(cls.username == username or cls.username == username.lower()).first():
             return cached
         if cache_only:
             return
@@ -131,7 +129,7 @@ class Channel(YoutubeObject):
             return cls.from_username(UrlLookup.get_resolved(url), cache_only=cache_only)
 
         url = UrlLookup.get_resolved(url) or url
-        if cached := current_session.query(cls).filter(cls.url == url).first():
+        if cached := current_session.query(cls).filter(cls.url == url or cls.url == url.lower()).first():
             return cached
         if cache_only:
             return
