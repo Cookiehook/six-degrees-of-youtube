@@ -1,4 +1,10 @@
 version: "3.7"
+secrets:
+  YOUTUBE_API_KEYS:
+    file: ./secrets/YOUTUBE_API_KEYS.secret
+  six-degrees-of-youtube-db-dsn:
+    file: ./secrets/six-degrees-of-youtube-db-dsn.secret
+
 services:
   app:
     build: .
@@ -8,9 +14,9 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:5000:5000"
-    environment:
-      - six-degrees-of-youtube-db-dsn=postgresql://postgres:bob@db:5432
-
+    secrets:
+      - YOUTUBE_API_KEYS
+      - six-degrees-of-youtube-db-dsn
   db:
     image: postgres
 #    command: [ "postgres", "-c", "log_statement=all" ]

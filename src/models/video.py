@@ -2,6 +2,7 @@ import datetime
 import logging
 import re
 
+from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.orm import Session
 
@@ -28,7 +29,7 @@ class Video(YoutubeObject):
         return self.title + " - " + self.id
 
     @classmethod
-    def from_id(cls, session, id: str, cache_only: bool = False):
+    def from_id(cls, id: str, cache_only: bool = False):
         """
         Queries the cache, then the API for a video with the given ID.
         Returns matching instance or None.
@@ -38,7 +39,7 @@ class Video(YoutubeObject):
         :return: Matching Video instance or None.
         :raises: AssertionError if more or less than 1 video is returned from the API
         """
-        if cached := session.query(cls).filter(cls.id == id).first():
+        if cached := current_session.query(cls).filter(cls.id == id).first():
             return cached
         if cache_only:
             return
@@ -57,7 +58,7 @@ class Video(YoutubeObject):
                    )
 
     @classmethod
-    def from_channel(cls, session, channel: Channel, cache_only=False):
+    def from_channel(cls, channel: Channel, cache_only=False):
         """
         Queries the Youtube API and retrieves a list of videos uploaded by that Channel.
         If the channel has previously been cached, then only newer unprocessed videos are returned.
@@ -71,14 +72,14 @@ class Video(YoutubeObject):
             'playlistId': channel.uploads_id,
             'maxResults': 50
         }
-        cached_videos = session.query(cls).filter(cls.channel_id == channel.id).order_by(cls.published_at.desc()).all()
+        cached_videos = current_session.query(cls).filter(cls.channel_id == channel.id).order_by(cls.published_at.desc()).all()
         if cache_only:
             return cached_videos
 
         # Only omit processed videos if the channel has been successfully processed before.
         # This stops collaborations being missed if a previous processed halted due to error.
         if channel.processed:
-            unprocessed_videos = session.query(cls).filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id)).order_by(cls.published_at.desc()).all()
+            unprocessed_videos = current_session.query(cls).filter(cls.channel_id == channel.id, ~cls.processed_for.contains(channel.id)).order_by(cls.published_at.desc()).all()
         else:
             unprocessed_videos = cached_videos
 
@@ -89,7 +90,7 @@ class Video(YoutubeObject):
         while True:
             for new_video in playlist_content:
                 if latest_video and latest_video.id == new_video['snippet']['resourceId']['videoId']:
-                    session.commit()
+                    current_session.commit()
                     return unprocessed_videos
                 if new_video['snippet']['resourceId']['videoId'] in ids:
                     # Items uploaded on the same day aren't in the right order. Eg, videos at 1pm, 2pm, 3pm may come
@@ -104,11 +105,11 @@ class Video(YoutubeObject):
                                      description=new_video['snippet']['description'],
                                      thumbnail_url=new_video['snippet']['thumbnails']['medium']['url'],
                                      published_at=datetime.datetime.strptime(new_video['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'))
-                session.add(video_instance)
+                current_session.add(video_instance)
                 unprocessed_videos.append(video_instance)
 
             if next_page is None:
-                session.commit()
+                current_session.commit()
                 return unprocessed_videos
             params['pageToken'] = next_page
             playlist_content, next_page = cls.get('playlistItems', params)

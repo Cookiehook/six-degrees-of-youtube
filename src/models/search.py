@@ -1,3 +1,4 @@
+from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String
 from sqlalchemy.orm import Session
 
@@ -17,7 +18,7 @@ class SearchResult(YoutubeObject):
         return self.search_term + " - " + self.title + " - " + self.id
 
     @classmethod
-    def from_term(cls, session, search_term, cache_only=False):
+    def from_term(cls, search_term, cache_only=False):
         """
         Retrieve a list of 10 matching search results for the given search term.
         This only retrieves results representing Channels.
@@ -26,7 +27,7 @@ class SearchResult(YoutubeObject):
         :param cache_only: Default False. If True, only search the cache.
         :return: list of SearchResults objects or None
         """
-        if cached := session.query(cls).filter(cls.search_term == search_term).all():
+        if cached := current_session.query(cls).filter(cls.search_term == search_term).all():
             return cached
         if cache_only:
             return
@@ -43,6 +44,6 @@ class SearchResult(YoutubeObject):
         for item in api_items:
             result = cls(id=item['id'].get('channelId'), title=item['snippet']['title'], search_term=search_term)
             results.append(result)
-            session.add(result)
-        session.commit()
+            current_session.add(result)
+        current_session.commit()
         return results

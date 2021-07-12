@@ -1,3 +1,4 @@
+from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.orm import Session
 
@@ -20,7 +21,7 @@ class UrlLookup(Base):
         return self.original + " - " + self.resolved
 
     @classmethod
-    def get_resolved(cls, session, url: str) -> str:
+    def get_resolved(cls, url: str) -> str:
         """
         Retrieve the final URL for the given URL, after all redirects have completed.
         If there are no redirects for a given url, the resolved will be the same as the input
@@ -28,16 +29,16 @@ class UrlLookup(Base):
         :param url: URL to resolve
         :return: Resolved URL of None
         """
-        if lookup := session.query(cls).filter(cls.original == url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url).first():
             return lookup.resolved
 
     @classmethod
-    def url_is_username(cls, session, url: str) -> bool:
+    def url_is_username(cls, url: str) -> bool:
         """
         Check if the given URL resolves to a user, not url attribute.
 
         :param url: URL to check
         :return: bool if URL found, None if not
         """
-        if lookup := session.query(cls).filter(cls.original == url).first():
+        if lookup := current_session.query(cls).filter(cls.original == url).first():
             return lookup.is_username

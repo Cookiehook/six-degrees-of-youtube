@@ -7,11 +7,11 @@ name = "pypi"
 boto3 = "*"  # Accessing RDS secrets
 flask = "*"  # Web application framework
 sqlalchemy = "*"  # DB interaction and ORM
+flask_sqlalchemy_session = "*"  # Manages a unique session for each request context
 psycopg2-binary = "*"  # Driver for Postgres DB
 requests = "*"  # Make HTTPS calls out to the Youtube API
 beautifulsoup4 = "*"  # HTML parser for retrieving URLs
 gunicorn = "*"  # Production webserver
-supervisor = "*"  # Manages webserver and nginx proxy threads
 
 [dev-packages]
 pytest = "*"  # Unit test framework

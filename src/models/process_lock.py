@@ -1,3 +1,4 @@
+from flask_sqlalchemy_session import current_session
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Session
 
@@ -10,11 +11,11 @@ class ProcessLock(Base):
     channel_name = Column(String, primary_key=True)
 
     @classmethod
-    def get(cls, session, channel_name):
-        return session.query(cls).filter(cls.channel_name == channel_name).first()
+    def get(cls, channel_name):
+        return current_session.query(cls).filter(cls.channel_name == channel_name).first()
 
     @classmethod
-    def remove(cls, session, channel_name):
-        lock = session.query(cls).filter(cls.channel_name == channel_name).first()
-        session.delete(lock)
-        session.commit()
+    def remove(cls, channel_name):
+        lock = current_session.query(cls).filter(cls.channel_name == channel_name).first()
+        current_session.delete(lock)
+        current_session.commit()

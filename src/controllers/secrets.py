@@ -8,10 +8,19 @@ logger = logging.getLogger()
 
 
 def get_secret(secret_name):
+    # Used when running on developer machine
     if secret := os.getenv(secret_name):
+        logger.info(f"Retrieving {secret_name} secret from env vars")
         return secret
 
-    logger.info("Retrieving DSN from secret manager")
+    # Used when running inside docker-compose network
+    if os.path.exists(f"/run/secrets/{secret_name}"):
+        logger.info(f"Retrieving {secret_name} secret from secret file")
+        with open(f"/run/secrets/{secret_name}") as sfile:
+            return sfile.read()
+
+    # Used when deployed to AWS
+    logger.info(f"Retrieving {secret_name} secret from secret manager")
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
