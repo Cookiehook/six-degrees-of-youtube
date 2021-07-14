@@ -46,14 +46,16 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
             logger.info(f"Retrieving guest channels for {target_channel}")
             guest_channels = {target_channel.id}
             host_videos_chunks = get_chunks(host_videos, gunicorn_conf.threads)
-            starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True), list] for list in host_videos_chunks]
+            starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True, _scheme="https"), list]
+                            for list in host_videos_chunks]
             for result in pool.starmap(request_guest_channels_for_video, starmap_args):
                 guest_channels.update(result)
 
             # Get all videos uploaded by all collaborators (including target channel)
             logger.info(f"Retrieving all videos for {target_channel}")
             all_videos = []
-            starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True), c] for c in guest_channels]
+            starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True, _scheme="https"), c]
+                            for c in guest_channels]
             for result in pool.starmap(request_videos_for_channel, starmap_args):
                 all_videos.extend(result)
 
@@ -61,7 +63,8 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
             if all_videos:
                 logger.info(f"Calculating collaborations for {target_channel}")
                 all_videos_chunks = get_chunks(all_videos, gunicorn_conf.threads)
-                starmap_args = [[url_for('graph.process_collaborations', _external=True), target_channel.id, videos] for videos in all_videos_chunks]
+                starmap_args = [[url_for('graph.process_collaborations', _external=True, _scheme="https"), target_channel.id, videos]
+                                for videos in all_videos_chunks]
                 pool.starmap(request_process_collaborations, starmap_args)
             logger.info(f"Finished processing channel {target_channel}")
             target_channel.processed = True

@@ -11,6 +11,9 @@ update:
 	pipenv check
 	pipenv graph
 
+run:
+	docker-compose up --build
+
 test: clean
 	pipenv run flake8
 	pipenv run pytest --cov src --cov-report term-missing
