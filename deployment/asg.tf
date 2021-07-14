@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "six-degrees-of-youtube" {
-  name = "six-degrees-of-youtube"
+  name = aws_launch_configuration.six-degrees-of-youtube.name
   min_size = "1"
   max_size = "5"
   desired_capacity = "1"
@@ -23,7 +23,7 @@ resource "aws_autoscaling_group" "six-degrees-of-youtube" {
 
 resource "aws_launch_configuration" "six-degrees-of-youtube" {
   name_prefix = "six-degrees-of-youtube-"
-  instance_type = "t2.micro"
+  instance_type = "t2.medium"
   image_id = data.aws_ami.amazon-linux.id
   iam_instance_profile = aws_iam_instance_profile.six-degrees-of-youtube-ec2.arn
   user_data = data.template_file.six-degrees-of-youtube.rendered

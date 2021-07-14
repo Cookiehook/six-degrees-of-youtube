@@ -3,7 +3,7 @@ resource "aws_alb" "six-degrees-of-youtube" {
   drop_invalid_header_fields = "false"
   enable_deletion_protection = "false"
   enable_http2               = "true"
-  idle_timeout               = "60"
+  idle_timeout               = "600"
   internal                   = "false"
   ip_address_type            = "ipv4"
   load_balancer_type         = "application"

@@ -5,7 +5,6 @@ import urllib
 
 from flask import Blueprint, current_app, request, render_template, jsonify, url_for
 from flask_sqlalchemy_session import current_session
-from sqlalchemy.exc import IntegrityError
 
 from src.controllers import get_collaborations
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException

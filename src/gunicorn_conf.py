@@ -2,7 +2,7 @@ import os
 
 bind = "0.0.0.0:5000"
 workers = 1
-threads = 80
+threads = 40
 wsgi_app = "src.app:app"
 
 accesslog = "/logs/gunicorn_access.log"

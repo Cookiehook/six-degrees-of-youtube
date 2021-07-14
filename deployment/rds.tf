@@ -53,7 +53,7 @@ resource "aws_db_instance" "six-degrees-of-youtube" {
 
 
 resource "aws_secretsmanager_secret" "password" {
-  name = "six-degrees-of-youtube-db-dsn"
+  name = "six_degrees_of_youtube_db_dsn"
   recovery_window_in_days = 0
 }
 
