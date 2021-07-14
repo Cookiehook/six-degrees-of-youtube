@@ -33,7 +33,7 @@ def generate_collaboration_graph():
         try:
             collabs = get_collaborations.get_collaborations_for_channel(target_channel_name, previous_channel_name)
             if len(collabs) > 0:
-                self_url = url_for('graph.generate_collaboration_graph', _external=True)
+                self_url = url_for('graph.generate_collaboration_graph', _external=True, _scheme="https")
                 collabs_json, node_size = build_anygraph_json(self_url, target_channel_name, collabs)
                 chart_title = f"{target_channel_name} & {previous_channel_name}" if previous_channel_name else target_channel_name
             else:
