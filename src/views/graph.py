@@ -5,7 +5,6 @@ import urllib
 
 from flask import Blueprint, current_app, request, render_template, jsonify, url_for
 from flask_sqlalchemy_session import current_session
-from sqlalchemy.exc import IntegrityError
 
 from src.controllers import get_collaborations
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
@@ -34,7 +33,7 @@ def generate_collaboration_graph():
         try:
             collabs = get_collaborations.get_collaborations_for_channel(target_channel_name, previous_channel_name)
             if len(collabs) > 0:
-                self_url = url_for('graph.generate_collaboration_graph', _external=True)
+                self_url = url_for('graph.generate_collaboration_graph', _external=True, _scheme="https")
                 collabs_json, node_size = build_anygraph_json(self_url, target_channel_name, collabs)
                 chart_title = f"{target_channel_name} & {previous_channel_name}" if previous_channel_name else target_channel_name
             else:
@@ -74,16 +73,10 @@ def get_collaborators_for_videos():
     video_ids = request.get_json()['videos']
     guest_channels = set()
     for video_id in video_ids:
-        try:
-            video = Video.from_id(video_id)
-            logger.debug(f"Parsing host video '{video}'")
-            guest_channels.update(get_collaborations.get_channels_from_description(video))
-            guest_channels.update(get_collaborations.get_channels_from_title(video))
-
-        except IntegrityError:
-            # On occasion, 2 threads will identify the same
-            # Ignoring this isn't a problem as we're working with sets. The first write is all we need.
-            current_session.rollback()
+        video = Video.from_id(video_id)
+        logger.debug(f"Parsing host video '{video}'")
+        guest_channels.update(get_collaborations.get_channels_from_description(video))
+        guest_channels.update(get_collaborations.get_channels_from_title(video))
     return jsonify(channels=[c.id for c in guest_channels])
 
 

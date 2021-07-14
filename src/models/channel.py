@@ -66,7 +66,7 @@ class Channel(YoutubeObject):
         new_channel = cls(id=channels[0]['id'],
                           title=channels[0]['snippet']['title'],
                           uploads_id=channels[0]['contentDetails']['relatedPlaylists']['uploads'],
-                          thumbnail_url=channels[0]['snippet']['thumbnails']['medium']['url'],
+                          thumbnail_url=channels[0]['snippet']['thumbnails'].get('medium', {}).get('url'),
                           url=channels[0]['snippet'].get('customUrl')
                           )
         current_session.add(new_channel)
@@ -102,7 +102,7 @@ class Channel(YoutubeObject):
         new_channel = cls(id=channels[0]['id'],
                           title=channels[0]['snippet']['title'],
                           uploads_id=channels[0]['contentDetails']['relatedPlaylists']['uploads'],
-                          thumbnail_url=channels[0]['snippet']['thumbnails']['medium']['url'],
+                          thumbnail_url=channels[0]['snippet']['thumbnails'].get('medium', {}).get('url'),
                           url=channels[0]['snippet'].get('customUrl'),
                           username=username
                           )

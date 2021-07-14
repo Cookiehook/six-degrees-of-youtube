@@ -15,6 +15,7 @@ from flask_sqlalchemy_session import flask_scoped_session  # noqa
 from src.controllers import secrets  # noqa
 from src.views.graph import graph_bp  # noqa
 from src.views.admin import admin_bp  # noqa
+from src.views.health import health_bp  # noqa
 from src.extensions import session_factory  # noqa
 
 
@@ -22,6 +23,7 @@ def create_app():
     app = Flask(__name__)
     app.register_blueprint(graph_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(health_bp)
     app.app_context().push()
     flask_scoped_session(session_factory, app)
 

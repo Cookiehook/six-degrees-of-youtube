@@ -19,7 +19,7 @@ class Video(YoutubeObject):
     channel_id = Column(String, nullable=False)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    thumbnail_url = Column(String, nullable=False)
+    thumbnail_url = Column(String)
     published_at = Column(DateTime, nullable=False)
     processed_for = Column(String, default='')
 
@@ -51,7 +51,7 @@ class Video(YoutubeObject):
                    channel_id=videos[0]['snippet']['channelId'],
                    title=videos[0]['snippet']['title'],
                    description=videos[0]['snippet']['description'],
-                   thumbnail_url=videos[0]['snippet']['thumbnails']['medium']['url'],
+                   thumbnail_url=videos[0]['snippet']['thumbnails'].get('medium', {}).get('url'),
                    published_at=datetime.datetime.strptime(videos[0]['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
                    )
 
@@ -102,7 +102,7 @@ class Video(YoutubeObject):
                                      channel_id=new_video['snippet']['channelId'],
                                      title=new_video['snippet']['title'],
                                      description=new_video['snippet']['description'],
-                                     thumbnail_url=new_video['snippet']['thumbnails']['medium']['url'],
+                                     thumbnail_url=new_video['snippet']['thumbnails'].get('medium', {}).get('url'),
                                      published_at=datetime.datetime.strptime(new_video['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'))
                 current_session.add(video_instance)
                 unprocessed_videos.append(video_instance)

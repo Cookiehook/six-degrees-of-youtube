@@ -7,7 +7,6 @@ ENV PYTHONUNBUFFERED 1
 RUN mkdir /logs
 
 # Install dependencies
-RUN apt-get update && apt-get install -y nginx && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN pip install pipenv==2020.11.15
 COPY Pipfile* /app/
 RUN pipenv install --ignore-pipfile

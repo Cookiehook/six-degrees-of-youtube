@@ -1,10 +1,11 @@
 import logging
-from multiprocessing import Pool
+import multiprocessing as mp
 
 import requests
 from flask import url_for
 from flask_sqlalchemy_session import current_session
 from requests import HTTPError
+from sqlalchemy.exc import IntegrityError
 
 from src import gunicorn_conf
 from src.controllers.exceptions import ChannelNotFoundException, YoutubeAuthenticationException
@@ -40,19 +41,21 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
         host_videos = [v.id for v in Video.from_channel(target_channel)]
 
         if host_videos:
-            pool = Pool(gunicorn_conf.threads)  # Only instantiate pool if there's work to do, as it's expensive
+            pool = mp.get_context("spawn").Pool(gunicorn_conf.threads)  # Only instantiate pool if there's work to do, as it's expensive
 
             logger.info(f"Retrieving guest channels for {target_channel}")
             guest_channels = {target_channel.id}
             host_videos_chunks = get_chunks(host_videos, gunicorn_conf.threads)
-            starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True), list] for list in host_videos_chunks]
+            starmap_args = [[url_for('graph.get_collaborators_for_videos', _external=True, _scheme="https"), list]
+                            for list in host_videos_chunks]
             for result in pool.starmap(request_guest_channels_for_video, starmap_args):
                 guest_channels.update(result)
 
             # Get all videos uploaded by all collaborators (including target channel)
             logger.info(f"Retrieving all videos for {target_channel}")
             all_videos = []
-            starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True), c] for c in guest_channels]
+            starmap_args = [[url_for('graph.get_uploads_for_channel', _external=True, _scheme="https"), c]
+                            for c in guest_channels]
             for result in pool.starmap(request_videos_for_channel, starmap_args):
                 all_videos.extend(result)
 
@@ -60,7 +63,8 @@ def get_collaborations_for_channel(channel_name: str, previous_channel_name: str
             if all_videos:
                 logger.info(f"Calculating collaborations for {target_channel}")
                 all_videos_chunks = get_chunks(all_videos, gunicorn_conf.threads)
-                starmap_args = [[url_for('graph.process_collaborations', _external=True), target_channel.id, videos] for videos in all_videos_chunks]
+                starmap_args = [[url_for('graph.process_collaborations', _external=True, _scheme="https"), target_channel.id, videos]
+                                for videos in all_videos_chunks]
                 pool.starmap(request_process_collaborations, starmap_args)
             logger.info(f"Finished processing channel {target_channel}")
             target_channel.processed = True
@@ -116,6 +120,8 @@ def get_channels_from_description(video: Video, cache_only=False) -> set:
     """
     Retrieve set of Channel objects for all channels referenced in
     the given video description.
+    On occasion, 2 threads will identify the same channel, and raise an IntegrityError
+    Ignoring this isn't a problem as we're working with sets. The first write is all we need.
 
     :param video: Video to parse
     :param cache_only: Default False. If True, only search the cache.
@@ -129,6 +135,8 @@ def get_channels_from_description(video: Video, cache_only=False) -> set:
                 channels.update([channel_by_id])
         except HTTPError as err:
             logger.error(f"Failed processing channel ID '{channel_id}' from video '{video}' - {err}")
+        except IntegrityError:
+            current_session.rollback()
 
     for username in video.get_users_from_description():
         try:
@@ -136,6 +144,8 @@ def get_channels_from_description(video: Video, cache_only=False) -> set:
                 channels.update([channel_by_name])
         except HTTPError as err:
             logger.error(f"Failed processing username '{username}' from video '{video}' - {err}")
+        except IntegrityError:
+            current_session.rollback()
 
     for video_id in video.get_video_ids_from_description():
         try:
@@ -144,6 +154,8 @@ def get_channels_from_description(video: Video, cache_only=False) -> set:
                     channels.update([channel_by_vid])
         except HTTPError as err:
             logger.error(f"Failed processing video ID '{video_id}' from video '{video}' - {err}")
+        except IntegrityError:
+            current_session.rollback()
 
     for url in video.get_urls_from_description():
         try:
@@ -151,6 +163,8 @@ def get_channels_from_description(video: Video, cache_only=False) -> set:
                 channels.update([channel_by_url])
         except HTTPError as err:
             logger.error(f"Failed processing url '{url}' from video '{video}' - {err}")
+        except IntegrityError:
+            current_session.rollback()
 
     return channels
 
@@ -173,10 +187,13 @@ def get_channels_from_title(video: Video, cache_only=False) -> set:
     def find_channel_by_title(results, titles):
         # Separate method to allow return from nested loop
         for result in results:
-            guest = Channel.from_id(result.id)
-            for title_fragment in titles:
-                if guest.title == title_fragment:
-                    return guest
+            try:
+                guest = Channel.from_id(result.id)
+                for title_fragment in titles:
+                    if guest.title == title_fragment:
+                        return guest
+            except IntegrityError:
+                current_session.rollback()
 
     channels = set()
 
