@@ -55,7 +55,7 @@ resource "aws_lb_target_group" "six-degrees-of-youtube" {
   name = "six-degrees-of-youtube"
   port = 5000
   protocol = "HTTP"
-  vpc_id = data.aws_vpc.six-degrees-of-youtube.id
+  vpc_id = aws_vpc.six-degrees-of-youtube.id
 
   health_check {
     path = "/health"

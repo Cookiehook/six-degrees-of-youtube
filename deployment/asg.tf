@@ -27,6 +27,7 @@ resource "aws_launch_configuration" "six-degrees-of-youtube" {
   image_id = data.aws_ami.amazon-linux.id
   iam_instance_profile = aws_iam_instance_profile.six-degrees-of-youtube-ec2.arn
   user_data = data.template_file.six-degrees-of-youtube.rendered
+  security_groups = [aws_security_group.six-degrees-of-youtube.id]
 }
 
 data "aws_ami" "amazon-linux" {
@@ -48,6 +49,6 @@ data "template_file" "six-degrees-of-youtube" {
   template = file("${path.module}/templates/userdata.sh")
   vars = {
     aws_region = "eu-west-2"
-    docker_tag = "latest"
+    docker_tag = "ec2-deployment"
   }
 }
