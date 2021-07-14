@@ -8,7 +8,7 @@ secrets:
 services:
   app:
     build: .
-    image: six-degrees-of-youtube
+    image: cookiehook/six-degrees-of-youtube:ec2-deployment
     depends_on:
       db:
         condition: service_healthy

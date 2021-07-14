@@ -74,16 +74,10 @@ def get_collaborators_for_videos():
     video_ids = request.get_json()['videos']
     guest_channels = set()
     for video_id in video_ids:
-        try:
-            video = Video.from_id(video_id)
-            logger.debug(f"Parsing host video '{video}'")
-            guest_channels.update(get_collaborations.get_channels_from_description(video))
-            guest_channels.update(get_collaborations.get_channels_from_title(video))
-
-        except IntegrityError:
-            # On occasion, 2 threads will identify the same
-            # Ignoring this isn't a problem as we're working with sets. The first write is all we need.
-            current_session.rollback()
+        video = Video.from_id(video_id)
+        logger.debug(f"Parsing host video '{video}'")
+        guest_channels.update(get_collaborations.get_channels_from_description(video))
+        guest_channels.update(get_collaborations.get_channels_from_title(video))
     return jsonify(channels=[c.id for c in guest_channels])
 
 

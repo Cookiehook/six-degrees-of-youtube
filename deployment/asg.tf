@@ -6,9 +6,9 @@ resource "aws_autoscaling_group" "six-degrees-of-youtube" {
   wait_for_capacity_timeout = "10m"
   launch_configuration = aws_launch_configuration.six-degrees-of-youtube.name
   vpc_zone_identifier = [
-    aws_subnet.eu-west-2a-public.id,
+//    aws_subnet.eu-west-2a-public.id,
     aws_subnet.eu-west-2a-private.id,
-    aws_subnet.eu-west-2b-public.id,
+//    aws_subnet.eu-west-2b-public.id,
     aws_subnet.eu-west-2b-private.id,
   ]
   target_group_arns = [
