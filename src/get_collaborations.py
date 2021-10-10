@@ -51,7 +51,6 @@ def get_target_channel(channel_name: str) -> Channel:
 
 
 def lambda_handler(event, context):
-    print(datetime.datetime.now())
     channel_cache = ChannelCache()
     target_channel = get_target_channel(event['target_channel'])
     uploads = Video.from_channel(target_channel)
@@ -81,12 +80,17 @@ def lambda_handler(event, context):
             channel_cache.add(Channel.from_url(_))
 
     for _ in channel_usernames:
-        channel_cache.add(Channel.from_username(_))
+        new_channel = Channel.from_username(_)
+        # Username can be queried, but isn't returned by the API
+        # This if statement saves the username in the cache, allowing later reuse
+        if old_channel := channel_cache.by_id(new_channel.id):
+            old_channel.username = _
+        else:
+            channel_cache.add(new_channel)
 
     for _ in video_ids:
         video = Video.from_id(_)
         if not channel_cache.by_id(video.channel_id):
             channel_cache.add(Channel.from_id(video.channel_id))
 
-    print(datetime.datetime.now())
     channel_cache.print()

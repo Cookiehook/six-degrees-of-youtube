@@ -11,12 +11,13 @@ logger = logging.getLogger()
 
 class Channel(YoutubeObject):
 
-    def __init__(self, id, title, uploads_id, thumbnail_url, url):
+    def __init__(self, id, title, uploads_id, thumbnail_url, url, username=None):
         self.id = id
         self.title = title
         self.uploads_id = uploads_id
         self.thumbnail_url = thumbnail_url
         self.url = url
+        self.username = username
 
     def __repr__(self):
         return f"{self.title} - {self.id}"
@@ -49,7 +50,8 @@ class Channel(YoutubeObject):
                    channels[0]['snippet']['title'],
                    channels[0]['contentDetails']['relatedPlaylists']['uploads'],
                    channels[0]['snippet']['thumbnails'].get('medium', {}).get('url'),
-                   channels[0]['snippet'].get('customUrl')
+                   channels[0]['snippet'].get('customUrl'),
+                   username
                    )
 
     @classmethod
@@ -77,6 +79,8 @@ class ChannelCache:
             print(channel)
 
     def add(self, channel: Channel):
+        if channel is None:
+            return  # TODO - Figure out where this is happening, as we're missing a channel by doing this
         self.__cache.add(channel)
 
     def by_id(self, channel_id):
