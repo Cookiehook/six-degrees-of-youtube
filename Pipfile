@@ -1,0 +1,8 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"   # Make HTTPS calls out to the Youtube API
+beautifulsoup4 = "*"  # HTML parser for retrieving URLs
