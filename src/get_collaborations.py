@@ -1,4 +1,6 @@
 import datetime
+import json
+import threading
 
 from requests import HTTPError
 
@@ -50,18 +52,14 @@ def get_target_channel(channel_name: str) -> Channel:
     return Channel.from_id(match[0].id)
 
 
-def lambda_handler(event, context):
-    channel_cache = ChannelCache()
-    target_channel = get_target_channel(event['target_channel'])
-    uploads = Video.from_channel(target_channel)
-
+def build_channel_cache(target_channel, channel_cache):
     channel_ids = set()
     channel_titles = set()
     channel_urls = set()
     channel_usernames = set()
     video_ids = set()
 
-    for video in uploads:
+    for video in Video.from_channel(target_channel):
         channel_ids.update(video.get_channel_ids_from_description())
         channel_titles.update(video.get_channel_titles_from_title())
         channel_urls.update(video.get_urls_from_description())
@@ -93,4 +91,70 @@ def lambda_handler(event, context):
         if not channel_cache.by_id(video.channel_id):
             channel_cache.add(Channel.from_id(video.channel_id))
 
-    channel_cache.print()
+
+def get_collaborations(target_channel: Channel, channel_cache: ChannelCache, out_collaborations: dict):
+    out_collaborations[target_channel] = {}
+
+    for video in Video.from_channel(target_channel):
+        if video.id == "jH-FK2RmZBo":
+            print()
+        for channel_id in video.get_channel_ids_from_description():
+            if channel := channel_cache.by_id(channel_id):
+                if channel == target_channel:
+                    continue
+                if out_collaborations[target_channel].get(channel) is None:
+                    out_collaborations[target_channel][channel] = []
+                out_collaborations[target_channel][channel].append(video)
+
+        for possible_title in video.get_channel_titles_from_title():
+            pass  # TODO - Implement
+
+        for url in video.get_urls_from_description():
+            if channel := channel_cache.by_url(url):
+                if channel == target_channel:
+                    continue
+                if out_collaborations[target_channel].get(channel) is None:
+                    out_collaborations[target_channel][channel] = []
+                out_collaborations[target_channel][channel].append(video)
+
+        for username in video.get_users_from_description():
+            if channel := channel_cache.by_username(username):
+                if channel == target_channel:
+                    continue
+                if out_collaborations[target_channel].get(channel) is None:
+                    out_collaborations[target_channel][channel] = []
+                out_collaborations[target_channel][channel].append(video)
+
+        for video_id in video.get_video_ids_from_description():
+            try:
+                linked_video = Video.from_id(video_id)
+                if channel := channel_cache.by_id(linked_video.channel_id):
+                    if channel == target_channel:
+                        continue
+                    if out_collaborations[target_channel].get(channel) is None:
+                        out_collaborations[target_channel][channel] = []
+                    out_collaborations[target_channel][channel].append(video)
+            except HTTPError:
+                print(f"Failed to find linked video {video_id} from video {video}")
+
+
+def lambda_handler(event, context):
+    print(datetime.datetime.now())
+    channel_cache = ChannelCache()
+    target_channel = get_target_channel(event['target_channel'])
+    build_channel_cache(target_channel, channel_cache)
+
+    threads = []
+    collabs = {}
+
+    for channel in channel_cache.cache:
+        t = threading.Thread(target=get_collaborations,
+                             args=(channel, channel_cache, collabs))
+        t.start()
+        threads.append(t)
+
+    for thread in threads:
+        thread.join()
+
+    print(datetime.datetime.now())
+    print(collabs)

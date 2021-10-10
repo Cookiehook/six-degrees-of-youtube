@@ -11,12 +11,12 @@ logger = logging.getLogger()
 
 class Channel(YoutubeObject):
 
-    def __init__(self, id, title, uploads_id, thumbnail_url, url, username=None):
+    def __init__(self, id, title, uploads_id, thumbnail_url, url, username=''):
         self.id = id
         self.title = title
         self.uploads_id = uploads_id
         self.thumbnail_url = thumbnail_url
-        self.url = url
+        self.url = url if url else ''
         self.username = username
 
     def __repr__(self):
@@ -72,33 +72,34 @@ class Channel(YoutubeObject):
 class ChannelCache:
 
     def __init__(self):
-        self.__cache = set()
+        self.cache = set()
 
     def print(self):
-        for channel in self.__cache:
+        for channel in self.cache:
             print(channel)
 
     def add(self, channel: Channel):
         if channel is None:
             return  # TODO - Figure out where this is happening, as we're missing a channel by doing this
-        self.__cache.add(channel)
+        self.cache.add(channel)
 
     def by_id(self, channel_id):
-        matches = [c for c in self.__cache if c.id == channel_id]
+        matches = [c for c in self.cache if c.id == channel_id]
         if matches:
             return matches[0]
 
     def by_title(self, channel_title):
-        matches = [c for c in self.__cache if c.title == channel_title]
+        matches = [c for c in self.cache if c.title == channel_title]
         if matches:
             return matches[0]
 
     def by_url(self, channel_url):
-        matches = [c for c in self.__cache if c.url == channel_url]
+        # URLs returned by the API are always in lower case
+        matches = [c for c in self.cache if c.url.lower() == channel_url.lower()]
         if matches:
             return matches[0]
 
     def by_username(self, channel_username):
-        matches = [c for c in self.__cache if c.username == channel_username]
+        matches = [c for c in self.cache if c.username.lower() == channel_username.lower()]
         if matches:
             return matches[0]
