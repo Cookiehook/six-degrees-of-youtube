@@ -57,7 +57,7 @@ class Video(YoutubeObject):
             params['pageToken'] = next_page
             playlist_content, next_page = cls.get('playlistItems', params)
 
-    def get_collaborators_from_title(self) -> set:
+    def get_channel_titles_from_title(self) -> set:
         """
         Retrieve set of any tagged channels (eg: '@Violet Orlandi') from the video's title.
         A tag starts with @, but has no end delimiter. The end is assumed to be the next @

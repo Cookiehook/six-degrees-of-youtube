@@ -40,13 +40,6 @@ def get_channel_from_title(channel_cache: ChannelCache, title: str):
 
 
 def get_target_channel(channel_name: str) -> Channel:
-    """
-    Get Channel object matching the given name.
-
-    :param channel_name: Name of channel, as seen on Youtube webpage
-    :return: Channel instance for that channel
-    :raises: ChannelNotFoundException if the channel can't be found.
-    """
     try:
         searches = SearchResult.from_term(channel_name)
         match = [s for s in searches if s.title == channel_name]
@@ -71,7 +64,7 @@ def lambda_handler(event, context):
 
     for video in uploads:
         channel_ids.update(video.get_channel_ids_from_description())
-        channel_titles.update(video.get_collaborators_from_title())
+        channel_titles.update(video.get_channel_titles_from_title())
         channel_urls.update(video.get_urls_from_description())
         channel_usernames.update(video.get_users_from_description())
         video_ids.update(video.get_video_ids_from_description())
