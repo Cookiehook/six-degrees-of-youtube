@@ -2,7 +2,6 @@ from src.models.youtube_object import YoutubeObject
 
 
 class SearchResult(YoutubeObject):
-    """Representation of a search result as returned from the Youtube 'search' API endpoint"""
 
     def __init__(self, id, title, search_term):
         self.id = id

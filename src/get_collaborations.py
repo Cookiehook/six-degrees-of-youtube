@@ -1,5 +1,4 @@
 import datetime
-import json
 import math
 import os
 import threading
@@ -12,16 +11,7 @@ from src.models.search_term import SearchResult
 from src.models.video import Video
 
 
-def get_channel_from_title(channel_cache: ChannelCache, title: str):
-
-    def find_channel_by_title(results, titles):
-        # Separate method to allow return from nested loop
-        for result in results:
-            guest = channel_cache.by_id(result.id) or Channel.from_id(result.id)
-            for title_fragment in titles:
-                if guest.title == title_fragment:
-                    return guest
-
+def get_channel_from_title(channel_cache: ChannelCache, title: str, cache_only=False):
     channel = None
     possible_titles = []
 
@@ -36,11 +26,14 @@ def get_channel_from_title(channel_cache: ChannelCache, title: str):
         if channel := channel_cache.by_title(possible_title):
             break
 
-    if not channel:
-        if search_results := SearchResult.from_term("|".join(possible_titles)):
-            channel = find_channel_by_title(search_results, possible_titles)
-
-    return channel
+    if not channel and not cache_only:
+        for result in SearchResult.from_term("|".join(possible_titles)):
+            if channel := channel_cache.by_id(result.id) is None:
+                channel = Channel.from_id(result.id)
+                channel_cache.add(channel)
+            for title_fragment in possible_titles:
+                if channel.title == title_fragment:
+                    return channel
 
 
 def get_target_channel(channel_name: str) -> Channel:
@@ -111,6 +104,14 @@ def build_channel_cache(uploads, channel_cache):
 
 
 def get_collaborations(uploads: list, channel_cache: ChannelCache, out_collaborations: dict):
+
+    def update_collaborations():
+        if channel == host_channel:
+            return
+        if out_collaborations[host_channel].get(channel) is None:
+            out_collaborations[host_channel][channel] = []
+        out_collaborations[host_channel][channel].append(video)
+
     for video in uploads:
         host_channel = channel_cache.by_id(video.channel_id)
         if out_collaborations.get(host_channel) is None:
@@ -118,40 +119,25 @@ def get_collaborations(uploads: list, channel_cache: ChannelCache, out_collabora
 
         for channel_id in video.get_channel_ids_from_description():
             if channel := channel_cache.by_id(channel_id):
-                if channel == host_channel:
-                    continue
-                if out_collaborations[host_channel].get(channel) is None:
-                    out_collaborations[host_channel][channel] = []
-                out_collaborations[host_channel][channel].append(video)
+                update_collaborations()
 
         for possible_title in video.get_channel_titles_from_title():
-            pass  # TODO - Implement
+            if channel := get_channel_from_title(channel_cache, possible_title, cache_only=True):
+                update_collaborations()
 
         for url in video.get_urls_from_description():
             if channel := channel_cache.by_url(url):
-                if channel == host_channel:
-                    continue
-                if out_collaborations[host_channel].get(channel) is None:
-                    out_collaborations[host_channel][channel] = []
-                out_collaborations[host_channel][channel].append(video)
+                update_collaborations()
 
         for username in video.get_users_from_description():
             if channel := channel_cache.by_username(username):
-                if channel == host_channel:
-                    continue
-                if out_collaborations[host_channel].get(channel) is None:
-                    out_collaborations[host_channel][channel] = []
-                out_collaborations[host_channel][channel].append(video)
+                update_collaborations()
 
         for video_id in video.get_video_ids_from_description():
             try:
                 linked_video = Video.from_id(video_id)
                 if channel := channel_cache.by_id(linked_video.channel_id):
-                    if channel == host_channel:
-                        continue
-                    if out_collaborations[host_channel].get(channel) is None:
-                        out_collaborations[host_channel][channel] = []
-                    out_collaborations[host_channel][channel].append(video)
+                    update_collaborations()
             except HTTPError:
                 print(f"Failed to find linked video {video_id} from video {video}")
 
